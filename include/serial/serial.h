@@ -1,36 +1,6 @@
 /*!
- * \file serial/serial.h
- * \author  William Woodall <wjwwood@gmail.com>
- * \author  John Harrison   <ash.gti@gmail.com>
- * \version 0.1
- *
- * \section LICENSE
- *
- * The MIT License
- *
- * Copyright (c) 2012 William Woodall
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- *
- * \section DESCRIPTION
- *
- * This provides a cross platform interface for interacting with Serial Ports.
+ * Created by noodles on 25-2-19.
+ * 串口通信
  */
 
 #ifndef SERIAL_H
@@ -50,9 +20,9 @@ __LINE__, (message) )
 
 namespace serial {
 
-/*!
- * Enumeration defines the possible bytesizes for the serial port.
- */
+    /*!
+    * 枚举定义了串口可能的字节大小。
+    */
     typedef enum {
         fivebits = 5,
         sixbits = 6,
@@ -60,9 +30,9 @@ namespace serial {
         eightbits = 8
     } bytesize_t;
 
-/*!
- * Enumeration defines the possible parity types for the serial port.
- */
+    /*!
+    * 枚举定义了串口可能的校验类型。
+    */
     typedef enum {
         parity_none = 0,
         parity_odd = 1,
@@ -71,30 +41,29 @@ namespace serial {
         parity_space = 4
     } parity_t;
 
-/*!
- * Enumeration defines the possible stopbit types for the serial port.
- */
+    /*!
+    * 枚举定义了串口可能的停止位类型。
+    */
     typedef enum {
         stopbits_one = 1,
         stopbits_two = 2,
         stopbits_one_point_five
     } stopbits_t;
 
-/*!
- * Enumeration defines the possible flowcontrol types for the serial port.
- */
+    /*!
+    * 枚举定义了串口可能的流控制类型。
+    */
     typedef enum {
         flowcontrol_none = 0,
         flowcontrol_software,
         flowcontrol_hardware
     } flowcontrol_t;
 
-/*!
- * Structure for setting the timeout of the serial port, times are
- * in milliseconds.
- *
- * In order to disable the interbyte timeout, set it to Timeout::max().
- */
+    /*!
+    * 设置串口超时的结构体，时间单位为毫秒。
+    *
+    * 为了禁用字节间超时，将其设置为 Timeout::max()。
+    */
     struct Timeout {
 #ifdef max
 # undef max
@@ -103,14 +72,12 @@ namespace serial {
         static uint32_t max() { return std::numeric_limits<uint32_t>::max(); }
 
         /*!
-         * Convenience function to generate Timeout structs using a
-         * single absolute timeout.
-         *
-         * \param timeout A long that defines the time in milliseconds until a
-         * timeout occurs after a call to read or write is made.
-         *
-         * \return Timeout struct that represents this simple timeout provided.
-         */
+        * 生成 Timeout 结构体的便捷函数，使用单个绝对超时。
+        *
+        * \param timeout 一个长整型，定义在调用 read 或 write 后发生超时的毫秒数。
+        *
+        * \return 表示此简单超时的 Timeout 结构体。
+        */
         static Timeout simpleTimeout(uint32_t timeout) {
             return Timeout(max(), timeout, 0, timeout, 0);
         }
@@ -142,42 +109,37 @@ namespace serial {
                   write_timeout_multiplier(write_timeout_multiplier_) {}
     };
 
-/*!
- * Class that provides a portable serial port interface.
- */
+    /*!
+    * 提供便携式串口接口的类。
+    */
     class Serial {
     public:
         /*!
-         * Creates a Serial object and opens the port if a port is specified,
-         * otherwise it remains closed until serial::Serial::open is called.
-         *
-         * \param port A std::string containing the address of the serial port,
-         *        which would be something like 'COM1' on Windows and '/dev/ttyS0'
-         *        on Linux.
-         *
-         * \param baudrate An unsigned 32-bit integer that represents the baudrate
-         *
-         * \param timeout A serial::Timeout struct that defines the timeout
-         * conditions for the serial port. \see serial::Timeout
-         *
-         * \param bytesize Size of each byte in the serial transmission of data,
-         * default is eightbits, possible values are: fivebits, sixbits, sevenbits,
-         * eightbits
-         *
-         * \param parity Method of parity, default is parity_none, possible values
-         * are: parity_none, parity_odd, parity_even
-         *
-         * \param stopbits Number of stop bits used, default is stopbits_one,
-         * possible values are: stopbits_one, stopbits_one_point_five, stopbits_two
-         *
-         * \param flowcontrol Type of flowcontrol used, default is
-         * flowcontrol_none, possible values are: flowcontrol_none,
-         * flowcontrol_software, flowcontrol_hardware
-         *
-         * \throw serial::PortNotOpenedException
-         * \throw serial::IOException
-         * \throw std::invalid_argument
-         */
+        * 创建一个 Serial 对象并在指定端口时打开端口，
+        * 否则它将保持关闭状态，直到调用 serial::Serial::open。
+        *
+        * \param port 一个包含串口地址的 std::string，
+        *        在 Windows 上类似于 'COM1'，在 Linux 上类似于 '/dev/ttyS0'。
+        *
+        * \param baudrate 一个表示波特率的无符号 32 位整数。
+        *
+        * \param timeout 一个 serial::Timeout 结构体，定义串口的超时条件。 \see serial::Timeout
+        *
+        * \param bytesize 串行数据传输中每个字节的大小，默认为 eightbits，
+        * 可能的值有：fivebits, sixbits, sevenbits, eightbits。
+        *
+        * \param parity 校验方法，默认为 parity_none，可能的值有：parity_none, parity_odd, parity_even。
+        *
+        * \param stopbits 使用的停止位数，默认为 stopbits_one，
+        * 可能的值有：stopbits_one, stopbits_one_point_five, stopbits_two。
+        *
+        * \param flowcontrol 使用的流控制类型，默认为 flowcontrol_none，
+        * 可能的值有：flowcontrol_none, flowcontrol_software, flowcontrol_hardware。
+        *
+        * \throw serial::PortNotOpenedException
+        * \throw serial::IOException
+        * \throw std::invalid_argument
+        */
         Serial(const std::string &port = "",
                uint32_t baudrate = 9600,
                Timeout timeout = Timeout(),
@@ -190,278 +152,256 @@ namespace serial {
         virtual ~Serial();
 
         /*!
-         * Opens the serial port as long as the port is set and the port isn't
-         * already open.
-         *
-         * If the port is provided to the constructor then an explicit call to open
-         * is not needed.
-         *
-         * \see Serial::Serial
-         *
-         * \throw std::invalid_argument
-         * \throw serial::SerialException
-         * \throw serial::IOException
-         */
+        * 打开串口，只要端口已设置且端口未打开。
+        *
+        * 如果在构造函数中提供了端口，则不需要显式调用 open。
+        *
+        * \see Serial::Serial
+        *
+        * \throw std::invalid_argument
+        * \throw serial::SerialException
+        * \throw serial::IOException
+        */
         void
         open();
 
-        /*! Gets the open status of the serial port.
-         *
-         * \return Returns true if the port is open, false otherwise.
-         */
+        /*!
+        * 获取串口的打开状态。
+        *
+        * \return 如果端口是打开的，返回 true，否则返回 false。
+        */
         bool
         isOpen() const;
 
-        /*! Closes the serial port. */
+        /*!
+        * 关闭串口。
+        */
         void
         close();
 
-        /*! Return the number of characters in the buffer. */
+        /*!
+        * 返回缓冲区中的字符数。
+        */
         size_t
         available();
 
-        /*! Block until there is serial data to read or read_timeout_constant
-         * number of milliseconds have elapsed. The return value is true when
-         * the function exits with the port in a readable state, false otherwise
-         * (due to timeout or select interruption). */
+        /*!
+        * 阻塞直到有串行数据可读或 read_timeout_constant 毫秒数已过。
+        * 当函数退出时，如果端口处于可读状态，则返回 true，否则返回 false
+        * （由于超时或选择中断）。
+        */
         bool
         waitReadable();
 
-        /*! Block for a period of time corresponding to the transmission time of
-         * count characters at present serial settings. This may be used in con-
-         * junction with waitReadable to read larger blocks of data from the
-         * port. */
+        /*!
+        * 阻塞一段时间，时间长度与当前串口设置下传输 count 个字符的时间相对应。
+        * 这可以与 waitReadable 一起使用，以从端口读取更大的数据块。
+        */
         void
         waitByteTimes(size_t count);
 
-        /*! Read a given amount of bytes from the serial port into a given buffer.
-         *
-         * The read function will return in one of three cases:
-         *  * The number of requested bytes was read.
-         *    * In this case the number of bytes requested will match the size_t
-         *      returned by read.
-         *  * A timeout occurred, in this case the number of bytes read will not
-         *    match the amount requested, but no exception will be thrown.  One of
-         *    two possible timeouts occurred:
-         *    * The inter byte timeout expired, this means that number of
-         *      milliseconds elapsed between receiving bytes from the serial port
-         *      exceeded the inter byte timeout.
-         *    * The total timeout expired, which is calculated by multiplying the
-         *      read timeout multiplier by the number of requested bytes and then
-         *      added to the read timeout constant.  If that total number of
-         *      milliseconds elapses after the initial call to read a timeout will
-         *      occur.
-         *  * An exception occurred, in this case an actual exception will be thrown.
-         *
-         * \param buffer An uint8_t array of at least the requested size.
-         * \param size A size_t defining how many bytes to be read.
-         *
-         * \return A size_t representing the number of bytes read as a result of the
-         *         call to read.
-         *
-         * \throw serial::PortNotOpenedException
-         * \throw serial::SerialException
-         */
+        /*!
+        * 从串口读取指定数量的字节到给定的缓冲区中。
+        *
+        * 读取函数将在以下三种情况下返回：
+        *  * 读取到请求的字节数。
+        *    * 在这种情况下，请求的字节数将与 read 返回的 size_t 相匹配。
+        *  * 发生超时，在这种情况下，读取的字节数将不匹配请求的数量，但不会抛出异常。可能发生的两种超时情况：
+        *    * 字节间超时到期，这意味着从串口接收字节之间经过的毫秒数超过了字节间超时。
+        *    * 总超时到期，这是通过将读取超时乘数乘以请求的字节数，然后加上读取超时常量来计算的。如果在初始调用读取后经过的总毫秒数超过了这个总数，将发生超时。
+        *  * 发生异常，在这种情况下将抛出实际的异常。
+        *
+        * \param buffer 至少具有请求大小的 uint8_t 数组。
+        * \param size 定义要读取的字节数的 size_t。
+        *
+        * \return 表示读取结果的字节数的 size_t。
+        *
+        * \throw serial::PortNotOpenedException
+        * \throw serial::SerialException
+        */
         size_t
         read(uint8_t *buffer, size_t size);
 
-        /*! Read a given amount of bytes from the serial port into a give buffer.
-         *
-         * \param buffer A reference to a std::vector of uint8_t.
-         * \param size A size_t defining how many bytes to be read.
-         *
-         * \return A size_t representing the number of bytes read as a result of the
-         *         call to read.
-         *
-         * \throw serial::PortNotOpenedException
-         * \throw serial::SerialException
-         */
+        /*!
+        * 从串口读取指定数量的字节到给定的缓冲区中。
+        *
+        * \param buffer 一个对 uint8_t 类型的 std::vector 的引用。
+        * \param size 一个定义要读取的字节数的 size_t。
+        *
+        * \return 一个表示读取结果的字节数的 size_t。
+        *
+        * \throw serial::PortNotOpenedException
+        * \throw serial::SerialException
+        */
         size_t
         read(std::vector<uint8_t> &buffer, size_t size = 1);
 
-        /*! Read a given amount of bytes from the serial port into a give buffer.
-         *
-         * \param buffer A reference to a std::string.
-         * \param size A size_t defining how many bytes to be read.
-         *
-         * \return A size_t representing the number of bytes read as a result of the
-         *         call to read.
-         *
-         * \throw serial::PortNotOpenedException
-         * \throw serial::SerialException
-         */
+        /*!
+        * 从串口读取指定数量的字节到给定的缓冲区中。
+        *
+        * \param buffer 一个对 std::string 的引用。
+        * \param size 一个定义要读取的字节数的 size_t。
+        *
+        * \return 一个表示读取结果的字节数的 size_t。
+        *
+        * \throw serial::PortNotOpenedException
+        * \throw serial::SerialException
+        */
         size_t
         read(std::string &buffer, size_t size = 1);
 
-        /*! Read a given amount of bytes from the serial port and return a string
-         *  containing the data.
-         *
-         * \param size A size_t defining how many bytes to be read.
-         *
-         * \return A std::string containing the data read from the port.
-         *
-         * \throw serial::PortNotOpenedException
-         * \throw serial::SerialException
-         */
+        /*!
+        * 从串口读取指定数量的字节并返回一个包含数据的字符串。
+        *
+        * \param size 一个定义要读取的字节数的 size_t。
+        *
+        * \return 一个包含从端口读取的数据的 std::string。
+        *
+        * \throw serial::PortNotOpenedException
+        * \throw serial::SerialException
+        */
         std::string
         read(size_t size = 1);
 
-        /*! Reads in a line or until a given delimiter has been processed.
-         *
-         * Reads from the serial port until a single line has been read.
-         *
-         * \param buffer A std::string reference used to store the data.
-         * \param size A maximum length of a line, defaults to 65536 (2^16)
-         * \param eol A string to match against for the EOL.
-         *
-         * \return A size_t representing the number of bytes read.
-         *
-         * \throw serial::PortNotOpenedException
-         * \throw serial::SerialException
-         */
+        /*!
+        * 从串口读取一行或直到处理完给定的分隔符。
+        *
+        * 从串口读取，直到读取到一行。
+        *
+        * \param buffer 用于存储数据的 std::string 引用。
+        * \param size 行的最大长度，默认为 65536 (2^16)。
+        * \param eol 用于匹配行尾的字符串。
+        *
+        * \return 表示读取字节数的 size_t。
+        *
+        * \throw serial::PortNotOpenedException
+        * \throw serial::SerialException
+        */
         size_t
         readline(std::string &buffer, size_t size = 65536, std::string eol = "\n");
 
-        /*! Reads in a line or until a given delimiter has been processed.
-         *
-         * Reads from the serial port until a single line has been read.
-         *
-         * \param size A maximum length of a line, defaults to 65536 (2^16)
-         * \param eol A string to match against for the EOL.
-         *
-         * \return A std::string containing the line.
-         *
-         * \throw serial::PortNotOpenedException
-         * \throw serial::SerialException
-         */
+        /*!
+        * 从串口读取一行或直到处理完给定的分隔符。
+        *
+        * 从串口读取，直到读取到一行。
+        *
+        * \param size 行的最大长度，默认为 65536 (2^16)。
+        * \param eol 用于匹配行尾的字符串。
+        *
+        * \return 一个包含行的 std::string。
+        *
+        * \throw serial::PortNotOpenedException
+        * \throw serial::SerialException
+        */
         std::string
         readline(size_t size = 65536, std::string eol = "\n");
 
-        /*! Reads in multiple lines until the serial port times out.
-         *
-         * This requires a timeout > 0 before it can be run. It will read until a
-         * timeout occurs and return a list of strings.
-         *
-         * \param size A maximum length of combined lines, defaults to 65536 (2^16)
-         *
-         * \param eol A string to match against for the EOL.
-         *
-         * \return A vector<string> containing the lines.
-         *
-         * \throw serial::PortNotOpenedException
-         * \throw serial::SerialException
-         */
+        /*!
+        * 读取多行数据，直到串口超时。
+        *
+        * 这需要一个大于 0 的超时才能运行。它将读取直到发生超时并返回一个字符串列表。
+        *
+        * \param size 组合行的最大长度，默认为 65536 (2^16)。
+        *
+        * \param eol 用于匹配行尾的字符串。
+        *
+        * \return 包含行的 std::vector<std::string>。
+        *
+        * \throw serial::PortNotOpenedException
+        * \throw serial::SerialException
+        */
         std::vector<std::string>
         readlines(size_t size = 65536, std::string eol = "\n");
 
-        /*! Write a string to the serial port.
-         *
-         * \param data A const reference containing the data to be written
-         * to the serial port.
-         *
-         * \param size A size_t that indicates how many bytes should be written from
-         * the given data buffer.
-         *
-         * \return A size_t representing the number of bytes actually written to
-         * the serial port.
-         *
-         * \throw serial::PortNotOpenedException
-         * \throw serial::SerialException
-         * \throw serial::IOException
-         */
+        /*!
+        * 将字符串写入串口。
+        *
+        * \param data 一个包含要写入串口的数据的常量引用。
+        *
+        * \param size 一个 size_t，指示应从给定数据缓冲区写入的字节数。
+        *
+        * \return 一个 size_t，表示实际写入串口的字节数。
+        *
+        * \throw serial::PortNotOpenedException
+        * \throw serial::SerialException
+        * \throw serial::IOException
+        */
         size_t
         write(const uint8_t *data, size_t size);
 
-        /*! Write a string to the serial port.
-         *
-         * \param data A const reference containing the data to be written
-         * to the serial port.
-         *
-         * \return A size_t representing the number of bytes actually written to
-         * the serial port.
-         *
-         * \throw serial::PortNotOpenedException
-         * \throw serial::SerialException
-         * \throw serial::IOException
-         */
+        /*!
+        * 将字符串写入串口。
+        *
+        * \param data 一个包含要写入串口的数据的常量引用。
+        *
+        * \return 一个 size_t，表示实际写入串口的字节数。
+        *
+        * \throw serial::PortNotOpenedException
+        * \throw serial::SerialException
+        * \throw serial::IOException
+        */
         size_t
         write(const std::vector<uint8_t> &data);
 
-        /*! Write a string to the serial port.
-         *
-         * \param data A const reference containing the data to be written
-         * to the serial port.
-         *
-         * \return A size_t representing the number of bytes actually written to
-         * the serial port.
-         *
-         * \throw serial::PortNotOpenedException
-         * \throw serial::SerialException
-         * \throw serial::IOException
-         */
+        /*!
+        * 将字符串写入串口。
+        *
+        * \param data 一个包含要写入串口的数据的常量引用。
+        *
+        * \return 一个 size_t，表示实际写入串口的字节数。
+        *
+        * \throw serial::PortNotOpenedException
+        * \throw serial::SerialException
+        * \throw serial::IOException
+        */
         size_t
         write(const std::string &data);
 
-        /*! Sets the serial port identifier.
-         *
-         * \param port A const std::string reference containing the address of the
-         * serial port, which would be something like 'COM1' on Windows and
-         * '/dev/ttyS0' on Linux.
-         *
-         * \throw std::invalid_argument
-         */
+        /*!
+        * 设置串口标识符。
+        *
+        * \param port 一个包含串口地址的常量 std::string 引用，
+        * 例如在 Windows 上为 'COM1'，在 Linux 上为 '/dev/ttyS0'。
+        *
+        * \throw std::invalid_argument
+        */
         void
         setPort(const std::string &port);
 
-        /*! Gets the serial port identifier.
-         *
-         * \see Serial::setPort
-         *
-         * \throw std::invalid_argument
-         */
+        /*!
+        * 获取串口标识符。
+        *
+        * \see Serial::setPort
+        *
+        * \throw std::invalid_argument
+        */
         std::string
         getPort() const;
 
-        /*! Sets the timeout for reads and writes using the Timeout struct.
-         *
-         * There are two timeout conditions described here:
-         *  * The inter byte timeout:
-         *    * The inter_byte_timeout component of serial::Timeout defines the
-         *      maximum amount of time, in milliseconds, between receiving bytes on
-         *      the serial port that can pass before a timeout occurs.  Setting this
-         *      to zero will prevent inter byte timeouts from occurring.
-         *  * Total time timeout:
-         *    * The constant and multiplier component of this timeout condition,
-         *      for both read and write, are defined in serial::Timeout.  This
-         *      timeout occurs if the total time since the read or write call was
-         *      made exceeds the specified time in milliseconds.
-         *    * The limit is defined by multiplying the multiplier component by the
-         *      number of requested bytes and adding that product to the constant
-         *      component.  In this way if you want a read call, for example, to
-         *      timeout after exactly one second regardless of the number of bytes
-         *      you asked for then set the read_timeout_constant component of
-         *      serial::Timeout to 1000 and the read_timeout_multiplier to zero.
-         *      This timeout condition can be used in conjunction with the inter
-         *      byte timeout condition with out any problems, timeout will simply
-         *      occur when one of the two timeout conditions is met.  This allows
-         *      users to have maximum control over the trade-off between
-         *      responsiveness and efficiency.
-         *
-         * Read and write functions will return in one of three cases.  When the
-         * reading or writing is complete, when a timeout occurs, or when an
-         * exception occurs.
-         *
-         * A timeout of 0 enables non-blocking mode.
-         *
-         * \param timeout A serial::Timeout struct containing the inter byte
-         * timeout, and the read and write timeout constants and multipliers.
-         *
-         * \see serial::Timeout
-         */
+        /*!
+        * 设置读写操作的超时，使用 Timeout 结构体。
+        *
+        * 这里描述了两种超时条件：
+        *  * 字节间超时：
+        *    * inter_byte_timeout 是 serial::Timeout 结构体的一个成员，定义了在串口接收字节之间的最大时间（以毫秒为单位），超过这个时间将发生超时。将其设置为 0 可以防止字节间超时的发生。
+        *  * 总时间超时：
+        *    * 这个超时条件的常量和乘数部分分别定义在 serial::Timeout 结构体中，适用于读和写操作。如果从调用读或写操作开始经过的总时间（以毫秒为单位）超过了指定的时间，将发生超时。
+        *    * 这个限制是通过将乘数部分乘以请求的字节数，然后将该乘积加到常量部分来定义的。例如，如果你希望读操作在一秒钟后超时，无论请求的字节数是多少，那么可以将 read_timeout_constant 设置为 1000，将 read_timeout_multiplier 设置为 0。这个超时条件可以与字节间超时条件一起使用，超时将发生在两个条件之一满足时。这允许用户在响应速度和效率之间进行最大程度的控制。
+        *
+        * 读写函数将在以下三种情况下返回：读写完成、发生超时或发生异常。
+        *
+        * 超时设置为 0 将启用非阻塞模式。
+        *
+        * \param timeout 一个 serial::Timeout 结构体，包含字节间超时，以及读写超时的常量和乘数。
+        *
+        * \see serial::Timeout
+        */
         void
         setTimeout(Timeout &timeout);
 
-        /*! Sets the timeout for reads and writes. */
+        /*!
+        * 设置读写操作的超时。
+        */
         void
         setTimeout(uint32_t inter_byte_timeout, uint32_t read_timeout_constant,
                    uint32_t read_timeout_multiplier, uint32_t write_timeout_constant,
@@ -472,178 +412,205 @@ namespace serial {
             return setTimeout(timeout);
         }
 
-        /*! Gets the timeout for reads in seconds.
-         *
-         * \return A Timeout struct containing the inter_byte_timeout, and read
-         * and write timeout constants and multipliers.
-         *
-         * \see Serial::setTimeout
-         */
+        /*!
+        * 获取读操作的超时时间（以秒为单位）。
+        *
+        * \return 一个 Timeout 结构体，包含 inter_byte_timeout，以及读写超时的常量和乘数。
+        *
+        * \see Serial::setTimeout
+        */
         Timeout
         getTimeout() const;
 
-        /*! Sets the baudrate for the serial port.
-         *
-         * Possible baudrates depends on the system but some safe baudrates include:
-         * 110, 300, 600, 1200, 2400, 4800, 9600, 14400, 19200, 28800, 38400, 56000,
-         * 57600, 115200
-         * Some other baudrates that are supported by some comports:
-         * 128000, 153600, 230400, 256000, 460800, 500000, 921600
-         *
-         * \param baudrate An integer that sets the baud rate for the serial port.
-         *
-         * \throw std::invalid_argument
-         */
+        /*!
+        * 设置串口的波特率。
+        *
+        * 可能的波特率取决于系统，但一些安全的波特率包括：
+        * 110, 300, 600, 1200, 2400, 4800, 9600, 14400, 19200, 28800, 38400, 56000,
+        * 57600, 115200
+        * 一些其他波特率在某些串口上也受支持：
+        * 128000, 153600, 230400, 256000, 460800, 500000, 921600
+        *
+        * \param baudrate 一个整数，设置串口的波特率。
+        *
+        * \throw std::invalid_argument
+        */
         void
         setBaudrate(uint32_t baudrate);
 
-        /*! Gets the baudrate for the serial port.
-         *
-         * \return An integer that sets the baud rate for the serial port.
-         *
-         * \see Serial::setBaudrate
-         *
-         * \throw std::invalid_argument
-         */
+        /*!
+        * 获取串口的波特率。
+        *
+        * \return 一个整数，表示串口的波特率。
+        *
+        * \see Serial::setBaudrate
+        *
+        * \throw std::invalid_argument
+        */
         uint32_t
         getBaudrate() const;
 
-        /*! Sets the bytesize for the serial port.
-         *
-         * \param bytesize Size of each byte in the serial transmission of data,
-         * default is eightbits, possible values are: fivebits, sixbits, sevenbits,
-         * eightbits
-         *
-         * \throw std::invalid_argument
-         */
+        /*!
+        * 设置串口每个字节的大小。
+        *
+        * \param bytesize 串行数据传输中每个字节的大小，
+        * 默认为 eightbits，可能的值有：fivebits, sixbits, sevenbits, eightbits。
+        *
+        * \throw std::invalid_argument
+        */
         void
         setBytesize(bytesize_t bytesize);
 
-        /*! Gets the bytesize for the serial port.
-         *
-         * \see Serial::setBytesize
-         *
-         * \throw std::invalid_argument
-         */
+        /*!
+        * 获取串口每个字节的大小。
+        *
+        * \see Serial::setBytesize
+        *
+        * \throw std::invalid_argument
+        */
         bytesize_t
         getBytesize() const;
 
-        /*! Sets the parity for the serial port.
-         *
-         * \param parity Method of parity, default is parity_none, possible values
-         * are: parity_none, parity_odd, parity_even
-         *
-         * \throw std::invalid_argument
-         */
+        /*!
+        * 设置串口的校验方式。
+        *
+        * \param parity 校验方法，默认为 parity_none，可能的值有：parity_none, parity_odd, parity_even。
+        *
+        * \throw std::invalid_argument
+        */
         void
         setParity(parity_t parity);
 
-        /*! Gets the parity for the serial port.
-         *
-         * \see Serial::setParity
-         *
-         * \throw std::invalid_argument
-         */
+        /*!
+        * 获取串口的校验方式。
+        *
+        * \see Serial::setParity
+        *
+        * \throw std::invalid_argument
+        */
         parity_t
         getParity() const;
 
-        /*! Sets the stopbits for the serial port.
-         *
-         * \param stopbits Number of stop bits used, default is stopbits_one,
-         * possible values are: stopbits_one, stopbits_one_point_five, stopbits_two
-         *
-         * \throw std::invalid_argument
-         */
+        /*!
+        * 设置串口的停止位。
+        *
+        * \param stopbits 使用的停止位数，默认为 stopbits_one，
+        * 可能的值有：stopbits_one, stopbits_one_point_five, stopbits_two。
+        *
+        * \throw std::invalid_argument
+        */
         void
         setStopbits(stopbits_t stopbits);
 
-        /*! Gets the stopbits for the serial port.
-         *
-         * \see Serial::setStopbits
-         *
-         * \throw std::invalid_argument
-         */
+        /*!
+        * 获取串口的停止位。
+        *
+        * \see Serial::setStopbits
+        *
+        * \throw std::invalid_argument
+        */
         stopbits_t
         getStopbits() const;
 
-        /*! Sets the flow control for the serial port.
-         *
-         * \param flowcontrol Type of flowcontrol used, default is flowcontrol_none,
-         * possible values are: flowcontrol_none, flowcontrol_software,
-         * flowcontrol_hardware
-         *
-         * \throw std::invalid_argument
-         */
+        /*!
+        * 设置串口的流控制。
+        *
+        * \param flowcontrol 使用的流控制类型，默认为 flowcontrol_none，
+        * 可能的值有：flowcontrol_none, flowcontrol_software, flowcontrol_hardware。
+        *
+        * \throw std::invalid_argument
+        */
         void
         setFlowcontrol(flowcontrol_t flowcontrol);
 
-        /*! Gets the flow control for the serial port.
-         *
-         * \see Serial::setFlowcontrol
-         *
-         * \throw std::invalid_argument
-         */
+        /*!
+        * 获取串口的流控制。
+        *
+        * \see Serial::setFlowcontrol
+        *
+        * \throw std::invalid_argument
+        */
         flowcontrol_t
         getFlowcontrol() const;
 
-        /*! Flush the input and output buffers */
+        /*!
+        * 清空输入和输出缓冲区。
+        */
         void
         flush();
 
-        /*! Flush only the input buffer */
+        /*!
+        * 仅清空输入缓冲区。
+        */
         void
         flushInput();
 
-        /*! Flush only the output buffer */
+        /*!
+        * 仅清空输出缓冲区。
+        */
         void
         flushOutput();
 
-        /*! Sends the RS-232 break signal.  See tcsendbreak(3). */
+        /*!
+        * 发送 RS-232 断开信号。参见 tcsendbreak(3)。
+        */
         void
         sendBreak(int duration);
 
-        /*! Set the break condition to a given level.  Defaults to true. */
+        /*!
+        * 设置断开条件为给定的级别。默认为 true。
+        */
         void
         setBreak(bool level = true);
 
-        /*! Set the RTS handshaking line to the given level.  Defaults to true. */
+        /*!
+        * 设置 RTS 握手线为给定的级别。默认为 true。
+        */
         void
         setRTS(bool level = true);
 
-        /*! Set the DTR handshaking line to the given level.  Defaults to true. */
+        /*!
+        * 设置 DTR 握手线为给定的级别。默认为 true。
+        */
         void
         setDTR(bool level = true);
 
         /*!
-         * Blocks until CTS, DSR, RI, CD changes or something interrupts it.
-         *
-         * Can throw an exception if an error occurs while waiting.
-         * You can check the status of CTS, DSR, RI, and CD once this returns.
-         * Uses TIOCMIWAIT via ioctl if available (mostly only on Linux) with a
-         * resolution of less than +-1ms and as good as +-0.2ms.  Otherwise a
-         * polling method is used which can give +-2ms.
-         *
-         * \return Returns true if one of the lines changed, false if something else
-         * occurred.
-         *
-         * \throw SerialException
-         */
+        * 阻塞直到 CTS、DSR、RI、CD 发生变化或有其他中断。
+        *
+        * 如果在等待过程中发生错误，会抛出异常。
+        * 一旦返回，可以检查 CTS、DSR、RI 和 CD 的状态。
+        * 如果可用，使用 ioctl 的 TIOCMIWAIT（主要在 Linux 上）进行操作，
+        * 分辨率小于 ±1ms，最优可达 ±0.2ms。否则使用轮询方法，分辨率为 ±2ms。
+        *
+        * \return 如果其中一条线路发生变化，返回 true，否则返回 false。
+        *
+        * \throw SerialException
+        */
         bool
         waitForChange();
 
-        /*! Returns the current status of the CTS line. */
+        /*!
+        * 返回 CTS 线路的当前状态。
+        */
         bool
         getCTS();
 
-        /*! Returns the current status of the DSR line. */
+        /*!
+        * 返回 DSR 线路的当前状态。
+        */
         bool
         getDSR();
 
-        /*! Returns the current status of the RI line. */
+        /*!
+        * 返回 RI 线路的当前状态。
+        */
         bool
         getRI();
 
-        /*! Returns the current status of the CD line. */
+        /*!
+        * 返回 CD 线路的当前状态。
+        */
         bool
         getCD();
 
@@ -773,13 +740,13 @@ namespace serial {
 
     };
 
-/* Lists the serial ports available on the system
- *
- * Returns a vector of available serial ports, each represented
- * by a serial::PortInfo data structure:
- *
- * \return vector of serial::PortInfo.
- */
+    /*!
+    * 列出系统上可用的串口
+    *
+    * 返回一个包含可用串口的向量，每个串口由 serial::PortInfo 数据结构表示：
+    *
+    * \return serial::PortInfo 的向量。
+    */
     std::vector<PortInfo>
     list_ports();
 
