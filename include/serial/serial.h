@@ -443,7 +443,7 @@ namespace serial {
         *
         * \return 一个整数，表示串口的波特率。
         *
-        * \see Serial::setBaudrate
+        * \see Serial::buildSetBaudrate
         *
         * \throw std::invalid_argument
         */
@@ -614,9 +614,10 @@ namespace serial {
         bool
         getCD();
 
-    private:
         // Disable copy constructors
         Serial(const Serial &);
+
+    private:
 
         Serial &operator=(const Serial &);
 

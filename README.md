@@ -61,3 +61,10 @@ John Harrison <ash.gti@gmail.com>
 ### Contact
 
 William Woodall <william@osrfoundation.org>
+
+
+
+sudo usermod -aG dialout noodles
+
+-- Installing: /lib/libuptech.so
+-- Up-to-date: /usr/lib/libuptech.so

@@ -1,12 +1,20 @@
+message("")
+message(STATUS "CMake version: ${CMAKE_VERSION}")
+message(STATUS "CMAKE_CURRENT_SOURCE_DIR: ${CMAKE_CURRENT_SOURCE_DIR}")
+
 cmake_minimum_required(VERSION 2.8.3)
 project(up_core)
+
+# 启用 C++11 或更高版本
+set(CMAKE_CXX_STANDARD 11)
 
 # 设置使用 C 和 C++ 混编
 enable_language(C CXX)
 
 # 查找 Python 解释器和 pybind11
 find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
-find_package(pybind11 CONFIG REQUIRED)
+set(pybind11_DIR /usr/lib/cmake/pybind11)  # 这里确保使用官方 apt 版
+find_package(pybind11 REQUIRED)
 
 # 查找 gpiod 库
 find_package(PkgConfig REQUIRED)
@@ -29,7 +37,8 @@ message(STATUS "gpiod_INCLUDE_DIRS: ${GPIOD_INCLUDE_DIRS}")
 message(STATUS "gpiod_LIBRARIES: ${GPIOD_LIBRARIES}")
 
 ## Include headers
-include_directories(include  # 添加通用的头文件目录
+include_directories(
+        include  # 添加通用的头文件目录
         ${Python3_INCLUDE_DIRS}
         ${GPIOD_INCLUDE_DIRS}
 )
@@ -41,7 +50,6 @@ message(STATUS " - ${Python3_INCLUDE_DIRS}")
 set(up_core_SRCS
         src/add.cpp
         include/add.h
-        src/main.cpp
         src/serial.cc
         include/serial/serial.h
         include/serial/v8stdint.h
@@ -56,6 +64,7 @@ set(up_core_SRCS
         src/adc.cpp
         include/adc.h
 )
+
 if (APPLE)
     # If OSX
     list(APPEND up_core_SRCS src/impl/unix.cc)
@@ -70,24 +79,33 @@ else ()
     list(APPEND up_core_SRCS src/impl/list_ports/list_ports_win.cc)
 endif ()
 
-add_library(${PROJECT_NAME} ${up_core_SRCS})
+add_library(up_core_base
+        ${up_core_SRCS}
+)
 
-set_property(TARGET ${PROJECT_NAME} PROPERTY POSITION_INDEPENDENT_CODE ON)
-
-# 添加 Python 模块
-pybind11_add_module(${PROJECT_NAME} bind/wrapper.cpp)
-target_link_libraries(${PROJECT_NAME} PRIVATE ${PROJECT_NAME})
+add_executable(up_core_main
+        src/main.cpp
+        ${up_core_SRCS}
+)
 
 if (APPLE)
-    target_link_libraries(${PROJECT_NAME} ${FOUNDATION_LIBRARY} ${IOKIT_LIBRARY})
+    target_link_libraries(up_core_base ${FOUNDATION_LIBRARY} ${IOKIT_LIBRARY})
+    target_link_libraries(up_core_main ${FOUNDATION_LIBRARY} ${IOKIT_LIBRARY})
 elseif (UNIX)
-    target_link_libraries(${PROJECT_NAME} rt pthread ${GPIOD_LIBRARIES})
+    target_link_libraries(up_core_base rt pthread ${GPIOD_LIBRARIES})
+    target_link_libraries(up_core_main rt pthread ${GPIOD_LIBRARIES})
 else ()
-    target_link_libraries(${PROJECT_NAME} setupapi)
+    target_link_libraries(up_core_base setupapi)
+    target_link_libraries(up_core_main setupapi)
 endif ()
 
+# 添加 Python 模块
+pybind11_add_module(up_core bind/wrapper.cpp)
+
+target_link_libraries(up_core PRIVATE up_core_base ${GPIOD_LIBRARIES})
+
 # 指定 C++ 标准
-set_target_properties(${PROJECT_NAME} PROPERTIES
+set_target_properties(up_core PROPERTIES
         CXX_STANDARD 11
         CXX_STANDARD_REQUIRED YES
         CXX_EXTENSIONS NO
@@ -104,6 +122,12 @@ message(STATUS "GTEST_BOTH_LIBRARIES:" ${GTEST_BOTH_LIBRARIES})
 
 ## Tests
 # 创建一个测试可执行文件
-add_executable(serial_tests tests/test_serial.cpp)
-target_link_libraries(serial_tests GTest::GTest GTest::Main ${PROJECT_NAME})
-gtest_discover_tests(test_serial)
+add_executable(serial_tests tests/test_serial.cpp tests/test_servo.cpp)
+target_link_libraries(serial_tests GTest::GTest GTest::Main up_core_base)
+
+# 添加测试到 CTest
+include(GoogleTest)
+gtest_discover_tests(serial_tests)
+
+message(STATUS "end of CMakeLists.txt")
+message("")

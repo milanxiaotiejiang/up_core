@@ -28,6 +28,7 @@
 #include <sys/select.h>
 #include <sys/time.h>
 #include <time.h>
+#include <iostream>
 
 #ifdef __MACH__
 #include <AvailabilityMacros.h>
@@ -113,7 +114,7 @@ Serial::SerialImpl::SerialImpl(const string &port, unsigned long baudrate,
           bytesize_(bytesize), stopbits_(stopbits), flowcontrol_(flowcontrol) {
     pthread_mutex_init(&this->read_mutex, NULL);
     pthread_mutex_init(&this->write_mutex, NULL);
-    if (port_.empty() == false)
+    if (!port_.empty())
         open();
 }
 
@@ -128,11 +129,13 @@ Serial::SerialImpl::open() {
     if (port_.empty()) {
         throw invalid_argument("Empty port is invalid.");
     }
-    if (is_open_ == true) {
+    std::cout << "Opening port: " << port_ << std::endl;
+    if (is_open_) {
         throw SerialException("Serial port already open.");
     }
 
     fd_ = ::open(port_.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK);
+//    fd_ = ::open(port_.c_str(), O_RDWR);
 
     if (fd_ == -1) {
         switch (errno) {
