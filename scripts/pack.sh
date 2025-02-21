@@ -1,32 +1,5 @@
 #!/bin/bash
 
-# 引入 source.sh 来定位到项目根目录
-source ./scripts/source.sh
-
-# 引入 build.sh
-source ./scripts/build.sh
-
-# 检查虚拟环境是否已存在
-if [ ! -d "venv" ]; then
-    # 创建虚拟环境
-    python3.8 -m venv venv
-    echo "Virtual environment created."
-else
-    echo "Virtual environment already exists."
-fi
-
-# 激活虚拟环境
-source venv/bin/activate
-
-# 更新 pip
-pip install --upgrade pip
-
-# 卸载 up_tech
-pip uninstall up_tech -y
-
-# 安装 pybind11 和 wheel
-pip install pybind11 wheel
-
 echo "Installing the project..."
 
 # 查找生成的 .so 文件

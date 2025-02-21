@@ -3,6 +3,7 @@
 // 舵机控制
 //
 #include "servo.h"
+#include "logger.h"
 #include <iostream>
 #include <unistd.h>
 #include <algorithm>
@@ -97,12 +98,22 @@ bool Servo::sendCommand(const std::vector<uint8_t> &frame) {
     return serial.waitReadable();
 }
 
-void printHexData(const std::string &tag, const std::vector<uint8_t> &data) {
-    std::cout << "📩 " << tag << "（HEX）：";
-    for (uint8_t byte: data) {
-        std::cout << std::hex << std::setw(2) << std::setfill('0') << (int) byte << " ";
+void Servo::performSerialData(const std::vector<uint8_t> &packet) {
+    // 解析应答包
+    uint8_t id = packet[2];
+    uint8_t error = packet[4];
+    std::vector<uint8_t> payload(packet.begin() + 5, packet.end() - 1);
+
+    servo::ServoErrorInfo errorInfo = servo::getServoErrorInfo(error);
+    if (errorInfo.error != servo::ServoError::NO_ERROR) {
+        Logger::error("⚠️ 舵机 " + std::to_string(id) + " 返回错误: " + std::to_string(errorInfo.error)
+                      + " (" + errorInfo.description + ")");
     }
-    std::cout << std::dec << std::endl;
+
+    Logger::info("✅ 接收到数据包: " + bytesToHex(packet));
+
+    // 这里可以回调处理接收到的数据，例如存储 payload 供其他线程访问
+
 }
 
 void Servo::processSerialData() {
@@ -110,7 +121,7 @@ void Servo::processSerialData() {
 
     while (running) {
         if (!serial.isOpen()) {
-            std::cerr << "❌ 串口未打开，无法读取数据！" << std::endl;
+            Logger::error("❌ 串口未打开，无法读取数据！");
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             continue;
         }
@@ -118,28 +129,28 @@ void Servo::processSerialData() {
         // 读取数据
         size_t available_bytes = serial.available();
         if (available_bytes == 0) {
-            std::cerr << "❌ 串口未读取到数据！" << std::endl;
+            Logger::debug("❌ 串口未读取到数据！");
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             continue;
         }
 
-        std::cout << "📌 串口已打开，尝试读取 " << available_bytes << " 字节数据" << std::endl;
+        Logger::debug("📌 串口已打开，尝试读取 " + std::to_string(available_bytes) + " 字节数据");
 
         std::vector<uint8_t> temp_buffer(available_bytes);
         size_t bytes_read = serial.read(temp_buffer, available_bytes);
 
         if (bytes_read == 0) {
-            std::cerr << "❌ 读取失败或超时！" << std::endl;
+            Logger::error("❌ 读取失败或超时！");
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             continue;
         }
 
         buffer.insert(buffer.end(), temp_buffer.begin(), temp_buffer.end());
 
-        printHexData("接收到的数据", buffer);
+        Logger::debug("接收到的数据 " + bytesToHex(buffer));
 
         if (buffer.size() < 6) {
-            std::cerr << "❌ 数据包长度不足，丢弃数据" << std::endl;
+            Logger::debug("❌ 数据包长度不足，丢弃数据");
             buffer.clear();
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             continue;
@@ -151,20 +162,29 @@ void Servo::processSerialData() {
         auto it = std::search(buffer.begin(), buffer.end(), start_flag.begin(), start_flag.end());
 
         if (it == buffer.end()) {
-            std::cerr << "❌ 未找到数据包起始标志，丢弃数据" << std::endl;
+            Logger::debug("❌ 未找到数据包起始标志，丢弃数据");
             buffer.clear();
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             continue;
         }
 
         size_t start_index = std::distance(buffer.begin(), it);
-        std::cout << "✅ 找到起始标志，位置：" << start_index << std::endl;
+        Logger::debug("✅ 找到起始标志，位置：" + std::to_string(start_index));
 
         std::vector<uint8_t> packet;
         // 复制从 FF FF 开始的数据到 packet
         packet.assign(it, buffer.end());
 
-        printHexData("起始数据", packet);
+        // 清空缓冲区，因为数据已经复制到 packet
+        buffer.clear();
+
+        Logger::debug("起始数据 " + bytesToHex(packet));
+
+        // 检查数据包长度是否足够
+        if (packet.size() < 6) {
+            Logger::debug("❌ 数据包长度不足，丢弃数据");
+            continue;
+        }
 
         // 计算校验和
         uint8_t checksum = 0;
@@ -175,32 +195,12 @@ void Servo::processSerialData() {
 
         // 校验失败，丢弃数据包
         if (checksum != packet.back()) {
-            std::cerr << "❌ 校验失败，丢弃数据包" << std::endl;
+            Logger::debug("❌ 校验失败，丢弃数据包");
             continue;
         }
 
-        // 解析应答包
-        uint8_t id = packet[2];
-        uint8_t error = packet[4];
-        std::vector<uint8_t> payload(packet.begin() + 5, packet.end() - 1);
+        processDataPacket(packet);
 
-        // 显示接收数据
-        std::cout << "✅ 解析到数据包: ";
-        for (uint8_t byte: packet) {
-            printf("%02X ", byte);
-        }
-        std::cout << std::endl;
-
-        // 解析错误码
-        if (error != 0) {
-            std::cerr << "⚠️ 舵机 " << static_cast<int>(id) << " 返回错误: " << std::hex << static_cast<int>(error)
-                      << std::dec << std::endl;
-        }
-
-        // 这里可以回调处理接收到的数据，例如存储 payload 供其他线程访问
-
-
-        buffer.clear();
         // 避免 CPU 过载
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }

@@ -4,9 +4,13 @@
 #include <iostream>
 #include "servo.h"
 #include "serial/serial.h"
+#include "logger.h"
 #include <unistd.h>
+#include <iomanip>
 
 int main() {
+
+    Logger::setLogLevel(Logger::INFO);
 
     try {
         servo::ServoProtocol servoProtocol1(0x01);
@@ -14,26 +18,27 @@ int main() {
 
         const std::vector<serial::PortInfo> &listPorts = serial::list_ports();
         for (const auto &item: listPorts) {
-            std::cout << "设备名称：" << item.port << ", 描述：" << item.description << ", 硬件 ID：" << item.hardware_id
-                      << std::endl;
+            Logger::info("设备名称：" + item.port + ", 描述：" + item.description + ", 硬件 ID：" + item.hardware_id);
         }
 
 
         Servo servo("/dev/ttyUSB0", 1000000);
         servo.init();
+        servo.setDataCallback([&servo](const std::vector<uint8_t> &data) {
+            servo.performSerialData(data);
+        });
 
         // 检查串口是否打开
         if (servo.getSerial().isOpen()) {
-            std::cout << "✅ 串口已打开：" << servo.getSerial().getPort() << std::endl;
+            Logger::info("✅ 串口已打开：" + servo.getSerial().getPort());
 
-            std::cout << "设备名称：" << servo.getSerial().getPort() << std::endl;
-            std::cout << "波特率：" << servo.getSerial().getBaudrate() << std::endl;
-            std::cout << "字节大小：" << static_cast<int>(servo.getSerial().getBytesize()) << std::endl;
-            std::cout << "停止位：" << static_cast<int>(servo.getSerial().getStopbits()) << std::endl;
-            std::cout << "奇偶校验：" << static_cast<int>(servo.getSerial().getParity()) << std::endl;
-
+            Logger::info("设备名称：" + servo.getSerial().getPort()
+                         + ", 波特率：" + std::to_string(servo.getSerial().getBaudrate())
+                         + ", 字节大小：" + std::to_string(static_cast<int>(servo.getSerial().getBytesize()))
+                         + ", 停止位：" + std::to_string(static_cast<int>(servo.getSerial().getStopbits()))
+                         + ", 奇偶校验：" + std::to_string(static_cast<int>(servo.getSerial().getParity())));
         } else {
-            std::cerr << "❌ 串口打开失败！" << std::endl;
+            Logger::error("❌ 串口打开失败！");
             return -1;
         }
 
@@ -42,11 +47,7 @@ int main() {
 
         servo::ServoProtocol servoProtocol(0x01);
         auto ref = servo.sendCommand(servoProtocol.eeprom.buildGetSoftwareVersion());
-        if (ref) {
-            std::cout << "发送成功" << std::endl;
-        } else {
-            std::cout << "发送失败" << std::endl;
-        }
+        Logger::error(ref ? "发送成功" : "发送失败");
 
         sleep(2);
 

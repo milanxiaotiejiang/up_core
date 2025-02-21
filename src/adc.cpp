@@ -3,7 +3,6 @@
 //
 
 #include "adc.h"
-#include "adc.h"
 #include <iostream>
 
 namespace adc {

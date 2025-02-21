@@ -129,7 +129,7 @@ Serial::SerialImpl::open() {
     if (port_.empty()) {
         throw invalid_argument("Empty port is invalid.");
     }
-    std::cout << "Opening port: " << port_ << std::endl;
+
     if (is_open_) {
         throw SerialException("Serial port already open.");
     }

@@ -4,9 +4,9 @@
 
 #include "servo_protocol.h"
 
-#include <iostream>
 #include <numeric>
 #include "unordered_map"
+#include "logger.h"
 
 namespace servo {
 
@@ -73,52 +73,10 @@ namespace servo {
         // 计算校验和
         packet.push_back(calculateChecksum(packet)); // 校验和
 
-        // 这里应通过串口发送 `packet`，这里只是打印出来
-        std::cout << "发送 WRITE DATA 指令: ";
-        for (uint8_t byte: packet) std::printf("%02X ", byte);
-        std::cout << std::endl;
+        Logger::debug("发送指令包: " + bytesToHex(packet));
 
         return packet;
     }
-
-    // 发送 READ DATA 指令
-    bool Base::readRegister(uint8_t address, uint8_t length, std::vector<uint8_t> &data) {
-        std::vector<uint8_t> packet;
-        packet.push_back(0xFF); // 固定字头
-        packet.push_back(0xFF);
-        packet.push_back(id_); // ID
-        packet.push_back(4); // Length = 2(地址+数据长度) + 指令字节 + 校验和
-        packet.push_back(0x02); // READ DATA 指令
-        packet.push_back(address); // 读取的地址
-        packet.push_back(length); // 读取的数据长度
-        packet.push_back(calculateChecksum(packet)); // 校验和
-
-        // 这里应通过串口发送 `packet`，并接收应答数据
-        std::cout << "发送 READ DATA 指令: ";
-        for (uint8_t byte: packet) std::printf("%02X ", byte);
-        std::cout << std::endl;
-
-        // 模拟应答包（假设返回温度 32°C，即 0x20）
-        std::vector<uint8_t> response = {0xFF, 0xFF, id_, static_cast<uint8_t>(length + 2), 0x00, 0x20};
-        response.push_back(calculateChecksum(response));
-
-        // 解析应答包
-        if (response[0] != 0xFF || response[1] != 0xFF || response[2] != id_) {
-            std::cerr << "错误：无效的应答包" << std::endl;
-            return false;
-        }
-
-        uint8_t error = response[4]; // 错误码
-        if (error != 0) {
-            std::cerr << "错误：应答包错误码 = " << static_cast<int>(error) << std::endl;
-            return false;
-        }
-
-        // 读取数据
-        data.assign(response.begin() + 5, response.end() - 1);
-        return true;
-    }
-
 
     ServoEEPROM::ServoEEPROM(uint8_t id) : Base(id) {}
 
@@ -440,7 +398,7 @@ namespace servo {
 
     // 设置锁标志（1：锁定，0：解锁）
     std::vector<uint8_t> ServoRAM::buildSetLockFlag(bool lock) {
-        return buildCommandPacket(ORDER::WRITE_DATA, static_cast<uint8_t>(RAM::LOCK), {lock ? 1 : 0});
+        return buildCommandPacket(ORDER::WRITE_DATA, static_cast<uint8_t>(RAM::LOCK), {toByte(lock)});
     }
 
     // 读取锁标志

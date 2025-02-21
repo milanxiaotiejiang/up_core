@@ -5,8 +5,9 @@ message(STATUS "CMAKE_CURRENT_SOURCE_DIR: ${CMAKE_CURRENT_SOURCE_DIR}")
 cmake_minimum_required(VERSION 2.8.3)
 project(up_core)
 
-# 启用 C++11 或更高版本
-set(CMAKE_CXX_STANDARD 11)
+#set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # 设置使用 C 和 C++ 混编
 enable_language(C CXX)
@@ -63,6 +64,8 @@ set(up_core_SRCS
         include/spi.h
         src/adc.cpp
         include/adc.h
+        src/logger.cpp
+        include/logger.h
 )
 
 if (APPLE)
@@ -100,16 +103,26 @@ else ()
 endif ()
 
 # 添加 Python 模块
-pybind11_add_module(up_core bind/wrapper.cpp)
+pybind11_add_module(up_core bind/wrapper.cpp ${up_core_SRCS})
 
-target_link_libraries(up_core PRIVATE up_core_base ${GPIOD_LIBRARIES})
+if (APPLE)
+    target_link_libraries(up_core ${FOUNDATION_LIBRARY} ${IOKIT_LIBRARY})
+elseif (UNIX)
+    target_link_libraries(up_core up_core_base rt pthread ${GPIOD_LIBRARIES})
+else ()
+    target_link_libraries(up_core setupapi)
+endif ()
 
 # 指定 C++ 标准
 set_target_properties(up_core PROPERTIES
-        CXX_STANDARD 11
+        CXX_STANDARD 14
         CXX_STANDARD_REQUIRED YES
         CXX_EXTENSIONS NO
 )
+
+# 安装模块到 Python site-packages
+install(TARGETS up_core
+        LIBRARY DESTINATION ${PYTHON_SITE_PACKAGES})
 
 # 检测 Google Test
 enable_testing()

@@ -14,6 +14,7 @@
 #include <thread>
 #include <atomic>
 #include <condition_variable>
+#include <functional>
 
 /**
  * 1. 指令包格式
@@ -75,7 +76,18 @@ public:
     /** @brief 发送指令 */
     bool sendCommand(const std::vector<uint8_t> &frame);
 
+    /** @brief 解析串口数据 */
+    void performSerialData(const std::vector<uint8_t>& packet);
+
     const serial::Serial &getSerial() const;
+
+    // 注册回调函数类型
+    using DataCallback = std::function<void(const std::vector<uint8_t>&)>;
+
+    // 设置数据接收回调
+    void setDataCallback(DataCallback callback) {
+        dataCallback = callback;
+    }
 
 private:
     serial::Serial serial;
@@ -86,11 +98,19 @@ private:
     std::thread serialThread;
     std::atomic<bool> running{false};  // 控制线程运行状态
 
+    DataCallback dataCallback;
+
     void processSerialData();
 
     void enableBus();
 
     void disableBus();
+
+    void processDataPacket(const std::vector<uint8_t>& packet) {
+        if (dataCallback) {
+            dataCallback(packet); // 调用回调函数
+        }
+    }
 };
 
 #endif //UP_CORE_SERVO_H

@@ -7,6 +7,7 @@
 
 #include <vector>
 #include <stdint.h>
+#include "string"
 
 namespace servo {
 
@@ -88,8 +89,6 @@ namespace servo {
         // 发送 WRITE DATA 指令
         std::vector<uint8_t> buildCommandPacket(ORDER command, uint8_t address, const std::vector<uint8_t> &data);
 
-        // 发送 READ DATA 指令
-        bool readRegister(uint8_t address, uint8_t length, std::vector<uint8_t> &data);
     };
 
     // ===================  EEPROM 相关  ===================
@@ -288,6 +287,7 @@ namespace servo {
         // 检查舵机是否正在运行
         std::vector<uint8_t> buildCheckMovingFlag();
 
+        // 设置锁标志（1：锁定，0：解锁）
         std::vector<uint8_t> buildSetLockFlag(bool lock);
 
         // 读取锁标志
@@ -325,6 +325,52 @@ namespace servo {
         explicit ServoProtocol(uint8_t id)
                 : Base(id), eeprom(id), ram(id) {}
     };
+
+
+    // 枚举定义错误状态
+    enum ServoError {
+        NO_ERROR = 0x00,
+        OUT_OF_RANGE = 0x01,
+        OVERHEAT = 0x02,
+        COMMAND_OUT_OF_RANGE = 0x04,
+        CHECKSUM_ERROR = 0x08,
+        OVERLOAD = 0x10,
+        INSTRUCTION_ERROR = 0x20,
+        OVER_VOLTAGE_UNDER_VOLTAGE = 0x40,
+    };
+
+    // 错误处理结构
+    struct ServoErrorInfo {
+        ServoError error;
+        std::string description;
+    };
+
+    // 将错误位映射到结构
+    static ServoErrorInfo getServoErrorInfo(uint8_t error) {
+        ServoErrorInfo errorInfo = {NO_ERROR, "无错误"};
+
+        std::vector<ServoErrorInfo> errors = {
+                {INSTRUCTION_ERROR,          "指令错误"},
+                {OVERLOAD,                   "过载"},
+                {CHECKSUM_ERROR,             "校验和错误"},
+                {COMMAND_OUT_OF_RANGE,       "指令超范围"},
+                {OVERHEAT,                   "过热"},
+                {OUT_OF_RANGE,               "角度超范围"},
+                {OVER_VOLTAGE_UNDER_VOLTAGE, "过压/欠压"},
+        };
+
+        for (const auto &err: errors) {
+            if (error & static_cast<uint8_t>(err.error)) {
+                if (errorInfo.error == NO_ERROR) { // 只取第一个错误
+                    errorInfo = err;
+                } else {
+                    errorInfo.description += "，" + err.description; // 连接多个错误信息
+                }
+            }
+        }
+
+        return errorInfo;
+    }
 } // namespace servo
 
 

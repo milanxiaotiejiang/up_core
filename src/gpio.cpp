@@ -3,7 +3,6 @@
 //
 
 #include "gpio.h"
-#include <stdio.h>
 
 namespace gpio {
 /**
