@@ -9,14 +9,17 @@
 #include <algorithm>
 #include <iomanip>
 
-Servo::Servo(const std::string &serial_device, int baudrate)
-        : serial(serial_device, baudrate, serial::Timeout::simpleTimeout(1000)),
-          gpio(0, 0), gpio_enabled(false) {}
-
-Servo::Servo(const std::string &serial_device, int baudrate, int gpio_chip, int gpio_line)
-        : serial(serial_device, baudrate, serial::Timeout::simpleTimeout(1000)),
-          gpio(gpio_chip, gpio_line), gpio_enabled(true) {}
-
+//Servo::Servo(const gpio::GPIO &gpio, bool gpio_enabled,
+//             const std::string &port,
+//             uint32_t baudrate,
+//             serial::Timeout timeout,
+//             serial::bytesize_t bytesize,
+//             serial::parity_t parity,
+//             serial::stopbits_t stopbits,
+//             serial::flowcontrol_t flowcontrol
+//)
+//        : gpio(gpio), gpio_enabled(gpio_enabled),
+//          serial(port, baudrate, timeout, bytesize, parity, stopbits, flowcontrol) {}
 
 Servo::~Servo() {
     close();
@@ -26,11 +29,11 @@ Servo::~Servo() {
  * @brief 初始化舵机
  */
 void Servo::init() {
-    if (gpio_enabled)
-        gpio.init();
+    if (gpio != nullptr)
+        gpio->init();
 
-    if (!serial.isOpen())
-        serial.open();
+    if (!serial->isOpen())
+        serial->open();
 
     // 启动监听线程
     running = true;
@@ -46,11 +49,11 @@ void Servo::close() {
     if (serialThread.joinable())
         serialThread.join();
 
-    if (serial.isOpen())
-        serial.close();
+    if (serial->isOpen())
+        serial->close();
 
     if (gpio_enabled)
-        gpio.release();
+        gpio->release();
 }
 
 /**
@@ -58,7 +61,7 @@ void Servo::close() {
  */
 void Servo::enableBus() {
     if (gpio_enabled)
-        gpio.setValue(1);
+        gpio->setValue(1);
 }
 
 /**
@@ -66,36 +69,32 @@ void Servo::enableBus() {
  */
 void Servo::disableBus() {
     if (gpio_enabled)
-        gpio.setValue(0);
-}
-
-const serial::Serial &Servo::getSerial() const {
-    return serial;
+        gpio->setValue(0);
 }
 
 /**
  * @brief 发送命令给舵机
  */
 bool Servo::sendCommand(const std::vector<uint8_t> &frame) {
-    if (!serial.isOpen()) {
-        std::cerr << "❌ 串口未打开，无法发送数据！" << std::endl;
+    if (!serial->isOpen()) {
+        Logger::error("❌ 串口未打开，无法发送数据！");
         return false;
     }
 
     enableBus();
-    serial.flushInput();
+    serial->flushInput();
 
     // ✅ 传递正确的参数给 `write()`
-    size_t bytes_written = serial.write(frame.data(), frame.size());
+    size_t bytes_written = serial->write(frame.data(), frame.size());
     disableBus();
 
     if (bytes_written != frame.size()) {
-        std::cerr << "sendCommand: Failed to write full frame. Expected: "
-                  << frame.size() << ", Written: " << bytes_written << std::endl;
+        Logger::error("sendCommand: Failed to write full frame. Expected: "
+                      + std::to_string(frame.size()) + ", Written: " + std::to_string(bytes_written));
         return false;
     }
 
-    return serial.waitReadable();
+    return serial->waitReadable();
 }
 
 void Servo::performSerialData(const std::vector<uint8_t> &packet) {
@@ -120,14 +119,14 @@ void Servo::processSerialData() {
     std::vector<uint8_t> buffer;
 
     while (running) {
-        if (!serial.isOpen()) {
+        if (!serial->isOpen()) {
             Logger::error("❌ 串口未打开，无法读取数据！");
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             continue;
         }
 
         // 读取数据
-        size_t available_bytes = serial.available();
+        size_t available_bytes = serial->available();
         if (available_bytes == 0) {
             Logger::debug("❌ 串口未读取到数据！");
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -137,7 +136,7 @@ void Servo::processSerialData() {
         Logger::debug("📌 串口已打开，尝试读取 " + std::to_string(available_bytes) + " 字节数据");
 
         std::vector<uint8_t> temp_buffer(available_bytes);
-        size_t bytes_read = serial.read(temp_buffer, available_bytes);
+        size_t bytes_read = serial->read(temp_buffer, available_bytes);
 
         if (bytes_read == 0) {
             Logger::error("❌ 读取失败或超时！");

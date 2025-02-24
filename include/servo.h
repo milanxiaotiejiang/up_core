@@ -9,6 +9,7 @@
 #include "gpio.h"
 #include "servo_protocol.h"
 #include <stdint.h>
+#include <utility>
 #include <vector>
 #include <queue>
 #include <thread>
@@ -46,24 +47,18 @@
 
 class Servo {
 public:
-    /**
-        * @brief 构造 Servo 对象，初始化串口设备
-        * @param serial_device 串口设备路径 (如 "/dev/ttyUSB0")
-        * @param baudrate 波特率
-        * @param id 舵机 ID
-        */
-    Servo(const std::string &serial_device, int baudrate);
 
-    /**
-     * @brief 构造 Servo 对象，带 GPIO 控制
-     * @param serial_device 串口设备路径
-     * @param baudrate 波特率
-     * @param id 舵机 ID
-     * @param gpio_chip GPIO 芯片编号
-     * @param gpio_line GPIO 线编号
-     */
-    Servo(const std::string &serial_device, int baudrate, int gpio_chip, int gpio_line);
+//    Servo(const gpio::GPIO &gpio, bool gpio_enabled,
+//          const std::string &port = "",
+//          uint32_t baudrate = 9600,
+//          serial::Timeout timeout = serial::Timeout(),
+//          serial::bytesize_t bytesize = serial::eightbits,
+//          serial::parity_t parity = serial::parity_none,
+//          serial::stopbits_t stopbits = serial::stopbits_one,
+//          serial::flowcontrol_t flowcontrol = serial::flowcontrol_none);
 
+    explicit Servo(std::shared_ptr<serial::Serial> serial, std::shared_ptr<gpio::GPIO> gpio = nullptr)
+            : serial(std::move(serial)), gpio(std::move(gpio)) {}
 
     ~Servo();
 
@@ -77,12 +72,10 @@ public:
     bool sendCommand(const std::vector<uint8_t> &frame);
 
     /** @brief 解析串口数据 */
-    void performSerialData(const std::vector<uint8_t>& packet);
-
-    const serial::Serial &getSerial() const;
+    void performSerialData(const std::vector<uint8_t> &packet);
 
     // 注册回调函数类型
-    using DataCallback = std::function<void(const std::vector<uint8_t>&)>;
+    using DataCallback = std::function<void(const std::vector<uint8_t> &)>;
 
     // 设置数据接收回调
     void setDataCallback(DataCallback callback) {
@@ -90,8 +83,8 @@ public:
     }
 
 private:
-    serial::Serial serial;
-    gpio::GPIO gpio;
+    std::shared_ptr<serial::Serial> serial;
+    std::shared_ptr<gpio::GPIO> gpio;
 
     bool gpio_enabled = false;
 
@@ -106,7 +99,7 @@ private:
 
     void disableBus();
 
-    void processDataPacket(const std::vector<uint8_t>& packet) {
+    void processDataPacket(const std::vector<uint8_t> &packet) {
         if (dataCallback) {
             dataCallback(packet); // 调用回调函数
         }

@@ -6,6 +6,7 @@
 #include "servo.h"
 #include "adc.h"
 #include <pybind11/stl.h>
+#include <pybind11/functional.h>
 
 extern "C" {
 #include "add.h"
@@ -47,7 +48,7 @@ PYBIND11_MODULE(up_core, m) {
 
 
     // GPIO
-    py::class_<gpio::GPIO>(m, "GPIO")
+    py::class_<gpio::GPIO, std::shared_ptr<gpio::GPIO>>(m, "GPIO")
             .def(py::init<int, int>(), py::arg("chip_id"), py::arg("line_id"), "构造 GPIO 对象")
             .def("init", &gpio::GPIO::init, "初始化 GPIO")
             .def("setValue", &gpio::GPIO::setValue, py::arg("value"), "设置 GPIO 的电平")
@@ -81,21 +82,6 @@ PYBIND11_MODULE(up_core, m) {
     py::class_<spi::SPIException>(m, "SPIException")
             .def(py::init<const char *>())
             .def("what", &spi::SPIException::what);
-
-//    // Servo
-//    py::class_<Servo>(m, "Servo")
-//            .def(py::init<const std::string &, int>(),
-//                 py::arg("serial_device"), py::arg("baudrate"), "构造 Servo 对象，初始化串口设备")
-//            .def(py::init<const std::string &, int, int, int>(),
-//                 py::arg("serial_device"), py::arg("baudrate"), py::arg("gpio_chip"), py::arg("gpio_line"),
-//                 "构造 Servo 对象，带 GPIO 控制")
-//            .def("init", &Servo::init, "初始化 Servo")
-//            .def("close", &Servo::close, "关闭 Servo")
-//            .def("send_command", &Servo::sendCommand, py::arg("frame"), "发送指令")
-//            .def("perform_serial_data", &Servo::performSerialData, py::arg("packet"), "解析串口数据")
-//            .def("get_serial", &Servo::getSerial, py::return_value_policy::reference, "获取串口对象")
-//            .def("set_data_callback", &Servo::setDataCallback, py::arg("callback"),
-//                 "设置数据接收回调函数，参数为接受数据的回调函数");
 
     // servo::AlarmShutdownConfig
     py::enum_<servo::AlarmShutdownConfig>(m, "AlarmShutdownConfig")
@@ -201,6 +187,16 @@ PYBIND11_MODULE(up_core, m) {
             .value("OVER_VOLTAGE_UNDER_VOLTAGE", servo::ServoError::OVER_VOLTAGE_UNDER_VOLTAGE)
             .export_values();
 
+    // 绑定 ServoErrorInfo 结构体
+    py::class_<servo::ServoErrorInfo>(m, "ServoErrorInfo")
+            .def(py::init<>())  // 默认构造函数
+            .def_readwrite("error", &servo::ServoErrorInfo::error)
+            .def_readwrite("description", &servo::ServoErrorInfo::description);
+
+    // 绑定 getServoErrorInfo 函数
+    m.def("get_servo_error_info", &servo::getServoErrorInfo, "获取舵机错误信息",
+          py::arg("error"));
+
     // servo::ServoEEPROM
     py::class_<servo::ServoEEPROM>(m, "ServoEEPROM")
             .def(py::init<uint8_t>(), py::arg("id"), "构造 ServoEEPROM 对象")
@@ -269,6 +265,17 @@ PYBIND11_MODULE(up_core, m) {
             .def("buildSetMinPWM", &servo::ServoRAM::buildSetMinPWM, py::arg("pwm"), "设置最小PWM")
             .def("buildGetMinPWM", &servo::ServoRAM::buildGetMinPWM, "读取最小PWM");
 
+    py::class_<servo::Motor>(m, "Motor")
+            .def(py::init<uint8_t>(), py::arg("id"), "构造 Motor 对象")
+            .def("buildEnterWheelMode", &servo::Motor::buildEnterWheelMode, "设置舵机进入电机调速模式")
+            .def("buildSetWheelSpeed", &servo::Motor::buildSetWheelSpeed, py::arg("speed_ratio"), "设置电机模式的转速")
+            .def("buildRestoreAngleLimits", &servo::Motor::buildRestoreAngleLimits, "还原角度");
+
+    py::class_<servo::ServoProtocol>(m, "ServoProtocol")
+            .def(py::init<uint8_t>(), py::arg("id"), "构造 ServoProtocol 对象")
+            .def_readwrite("eeprom", &servo::ServoProtocol::eeprom)   // 暴露 eeprom
+            .def_readwrite("ram", &servo::ServoProtocol::ram);        // 暴露 ram
+
     // Bind the bytesize_t enum
     py::enum_<serial::bytesize_t>(m, "bytesize_t")
             .value("fivebits", serial::bytesize_t::fivebits)
@@ -317,7 +324,7 @@ PYBIND11_MODULE(up_core, m) {
             .def_readwrite("write_timeout_multiplier", &serial::Timeout::write_timeout_multiplier);
 
     // Bind the Serial class
-    py::class_<serial::Serial>(m, "Serial")
+    py::class_<serial::Serial, std::shared_ptr<serial::Serial>>(m, "Serial")
             .def(py::init<const std::string &, uint32_t, serial::Timeout, serial::bytesize_t, serial::parity_t, serial::stopbits_t, serial::flowcontrol_t>(),
                  py::arg("port") = "",
                  py::arg("baudrate") = 9600,
@@ -396,5 +403,25 @@ PYBIND11_MODULE(up_core, m) {
 
     // Bind the list_ports function
     m.def("list_ports", &serial::list_ports);
+
+    // Servo
+    py::class_<Servo>(m, "Servo")
+//            .def(py::init<const gpio::GPIO &, bool, const std::string &, uint32_t, serial::Timeout, serial::bytesize_t, serial::parity_t, serial::stopbits_t, serial::flowcontrol_t>(),
+//                 py::arg("gpio"),
+//                 py::arg("gpio_enabled"),
+//                 py::arg("port") = "",
+//                 py::arg("baudrate") = 9600,
+//                 py::arg("timeout") = serial::Timeout(),
+//                 py::arg("bytesize") = serial::eightbits,
+//                 py::arg("parity") = serial::parity_none,
+//                 py::arg("stopbits") = serial::stopbits_one,
+//                 py::arg("flowcontrol") = serial::flowcontrol_none)
+            .def(py::init<std::shared_ptr<serial::Serial>, std::shared_ptr<gpio::GPIO>>(),
+                 py::arg("serial"), py::arg("gpio") = nullptr, "构造 Servo 对象")
+            .def("init", &Servo::init, "Initialize the servo")
+            .def("close", &Servo::close, "Close the servo connection")
+            .def("send_command", &Servo::sendCommand, py::arg("frame"), "Send command to the servo")
+            .def("set_data_callback", &Servo::setDataCallback, "Set a data reception callback");
+
 
 }

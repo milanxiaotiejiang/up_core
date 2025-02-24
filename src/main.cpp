@@ -21,22 +21,24 @@ int main() {
             Logger::info("设备名称：" + item.port + ", 描述：" + item.description + ", 硬件 ID：" + item.hardware_id);
         }
 
+        std::shared_ptr<serial::Serial> serialPtr =
+                std::make_shared<serial::Serial>("/dev/ttyUSB0", 1000000, serial::Timeout::simpleTimeout(1000));
 
-        Servo servo("/dev/ttyUSB0", 1000000);
+        Servo servo(serialPtr);
         servo.init();
         servo.setDataCallback([&servo](const std::vector<uint8_t> &data) {
             servo.performSerialData(data);
         });
 
         // 检查串口是否打开
-        if (servo.getSerial().isOpen()) {
-            Logger::info("✅ 串口已打开：" + servo.getSerial().getPort());
+        if (serialPtr->isOpen()) {
+            Logger::info("✅ 串口已打开：" + serialPtr->getPort());
 
-            Logger::info("设备名称：" + servo.getSerial().getPort()
-                         + ", 波特率：" + std::to_string(servo.getSerial().getBaudrate())
-                         + ", 字节大小：" + std::to_string(static_cast<int>(servo.getSerial().getBytesize()))
-                         + ", 停止位：" + std::to_string(static_cast<int>(servo.getSerial().getStopbits()))
-                         + ", 奇偶校验：" + std::to_string(static_cast<int>(servo.getSerial().getParity())));
+            Logger::info("设备名称：" + serialPtr->getPort()
+                         + ", 波特率：" + std::to_string(serialPtr->getBaudrate())
+                         + ", 字节大小：" + std::to_string(static_cast<int>(serialPtr->getBytesize()))
+                         + ", 停止位：" + std::to_string(static_cast<int>(serialPtr->getStopbits()))
+                         + ", 奇偶校验：" + std::to_string(static_cast<int>(serialPtr->getParity())));
         } else {
             Logger::error("❌ 串口打开失败！");
             return -1;
