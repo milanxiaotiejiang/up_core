@@ -18,4 +18,5 @@ pip install --upgrade pip
 # 卸载 up_core
 pip uninstall up_core -y
 
+# 安装依赖
 pip install pybind11 wheel setuptools
