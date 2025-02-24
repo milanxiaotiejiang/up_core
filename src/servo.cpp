@@ -135,7 +135,7 @@ void Servo::processSerialData() {
 
         Logger::debug("📌 串口已打开，尝试读取 " + std::to_string(available_bytes) + " 字节数据");
 
-        std::vector<uint8_t> temp_buffer(available_bytes);
+        std::vector<uint8_t> temp_buffer;
         size_t bytes_read = serial->read(temp_buffer, available_bytes);
 
         if (bytes_read == 0) {

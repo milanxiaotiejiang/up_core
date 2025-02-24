@@ -25,7 +25,7 @@ int main() {
                 std::make_shared<serial::Serial>("/dev/ttyUSB0", 1000000, serial::Timeout::simpleTimeout(1000));
 
         Servo servo(serialPtr);
-        servo.init();
+//        servo.init();
         servo.setDataCallback([&servo](const std::vector<uint8_t> &data) {
             servo.performSerialData(data);
         });
@@ -46,10 +46,21 @@ int main() {
 
         sleep(2);
 
-
+        // FF FF 01 03 00 0A F1
         servo::ServoProtocol servoProtocol(0x01);
         auto ref = servo.sendCommand(servoProtocol.eeprom.buildGetSoftwareVersion());
         Logger::error(ref ? "发送成功" : "发送失败");
+
+        if (serialPtr->available()){
+
+
+           auto available_bytes = serialPtr->available();
+            std::vector<uint8_t> temp_buffer;
+            size_t bytes_read = serialPtr->read(temp_buffer, available_bytes);
+
+            Logger::error("接收到的数据 " + bytesToHex(temp_buffer));
+
+        }
 
         sleep(2);
 

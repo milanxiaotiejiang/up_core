@@ -339,13 +339,74 @@ PYBIND11_MODULE(up_core, m) {
             .def("available", &serial::Serial::available)
             .def("waitReadable", &serial::Serial::waitReadable)
             .def("waitByteTimes", &serial::Serial::waitByteTimes)
-            .def("read", py::overload_cast<uint8_t *, size_t>(&serial::Serial::read))
-            .def("read", py::overload_cast<std::vector<uint8_t> &, size_t>(&serial::Serial::read))
-            .def("read", py::overload_cast<std::string &, size_t>(&serial::Serial::read))
-            .def("read", py::overload_cast<size_t>(&serial::Serial::read))
-            .def("readline", py::overload_cast<std::string &, size_t, std::string>(&serial::Serial::readline))
-            .def("readline", py::overload_cast<size_t, std::string>(&serial::Serial::readline))
-            .def("readlines", &serial::Serial::readlines)
+
+                    // 绑定第一个 read 函数：接收 uint8_t* 缓冲区和大小
+            .def("read_bytes", [](serial::Serial &self, py::buffer &buffer, size_t size) {
+                // 获取 Python 缓冲区的信息
+                py::buffer_info buf_info = buffer.request();
+                // 检查缓冲区大小是否足够
+                if (buf_info.size < size) {
+                    throw std::runtime_error("Buffer size is smaller than the requested read size");
+                }
+                // 获取指向缓冲区的指针
+                uint8_t *ptr = static_cast<uint8_t *>(buf_info.ptr);
+                // 调用 C++ 的 read 函数
+                size_t bytes_read = self.read(ptr, size);
+                // 返回读取的字节数
+                return bytes_read;
+            })
+
+                    // 绑定第二个 read 函数：接收 std::vector<uint8_t>
+            .def("read", [](serial::Serial &self, size_t size) {
+                std::vector<uint8_t> buffer;
+                // 调用 C++ 的 std::vector 版本的 read 函数
+                size_t bytes_read = self.read(buffer, size);
+                // 返回读取的数据和读取的字节数
+                return py::make_tuple(buffer, bytes_read);
+            })
+
+                    // 绑定第一个 read 函数：接收 std::string 引用
+            .def("read_string", [](serial::Serial &self, size_t size) {
+                std::string buffer;
+                // 调用 C++ 的 std::string 版本的 read 函数
+                size_t bytes_read = self.read(buffer, size);
+                // 返回读取的数据和字节数
+                return py::make_tuple(buffer, bytes_read);
+            })
+
+                    // 绑定第二个 read 函数：返回 std::string
+            .def("read_str", [](serial::Serial &self, size_t size) {
+                // 直接调用 C++ 中返回 std::string 的 read 函数
+                std::string result = self.read(size);
+                // 返回结果
+                return result;
+            })
+
+                    // 绑定第一个 readline 函数：接收 string 引用
+            .def("readline_buffer", [](serial::Serial &self, size_t size, const std::string &eol) {
+                std::string buffer;
+                // 调用 C++ 的 readline 函数
+                size_t bytes_read = self.readline(buffer, size, eol);
+                // 返回读取的数据和字节数
+                return py::make_tuple(buffer, bytes_read);
+            })
+
+                    // 绑定第二个 readline 函数：返回 string
+            .def("readline", [](serial::Serial &self, size_t size, const std::string &eol) {
+                // 直接调用 C++ 中返回 std::string 的 readline 函数
+                std::string result = self.readline(size, eol);
+                // 返回结果
+                return result;
+            })
+
+                    // 绑定 readlines 函数：返回 vector<string>
+            .def("readlines", [](serial::Serial &self, size_t size, const std::string &eol) {
+                // 调用 C++ 中的 readlines 函数
+                std::vector<std::string> lines = self.readlines(size, eol);
+                // 返回 Python 列表
+                return py::cast(lines);
+            })
+
             .def("write", py::overload_cast<const uint8_t *, size_t>(&serial::Serial::write))
             .def("write", py::overload_cast<const std::vector<uint8_t> &>(&serial::Serial::write))
             .def("write", py::overload_cast<const std::string &>(&serial::Serial::write))

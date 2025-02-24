@@ -18,6 +18,7 @@
 #else
 
 #include "serial/impl/unix.h"
+#include "logger.h"
 
 #endif
 
@@ -144,6 +145,7 @@ Serial::read(std::vector<uint8_t> &buffer, size_t size) {
 
     buffer.insert(buffer.end(), buffer_, buffer_ + bytes_read);
     delete[] buffer_;
+
     return bytes_read;
 }
 

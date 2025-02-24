@@ -54,7 +54,9 @@ setup(
     long_description="This is a core library for the up_core project, which includes various functionalities like GPIO handling, serial communication, etc.",
     # 详细描述（可留空）
     py_modules=['up', 'uio'],  # 纯 Python 模块
-    install_requires=[],  # 依赖项
+    install_requires=[
+        'numpy',  # 依赖的第三方库
+    ],  # 依赖项
     entry_points={  # 命令行工具入口
         'console_scripts': [
             'up = up:main',  # 运行 `up` 命令时，会调用 `up.py` 中的 `main()` 函数

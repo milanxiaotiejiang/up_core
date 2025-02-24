@@ -1,10 +1,18 @@
 import argparse
-import up_core as up
+import time
+import threading
+import numpy as np
+
+import up_core as serial
+from up_core import Servo
+from up_core import ServoProtocol
+
+VERSION = "1.0.0"
 
 
 def list_serial_ports():
     """列出所有可用的串口设备，并打印信息。"""
-    ports = up.list_ports()
+    ports = serial.list_ports()
 
     if not ports:
         print("No available serial ports found.")
@@ -14,9 +22,141 @@ def list_serial_ports():
         print(f"Port: {port_info.port}, Description: {port_info.description}, Hardware ID: {port_info.hardware_id}")
 
 
-def open_serial(device, baudrate, parity, databits, stopbits, flowcontrol, timeout, raw_mode):
-    """根据指定的参数打开串口并进行通信。"""
-    pass  # 此处省略具体实现
+def open_serial(device, baudrate=9600, parity='none', databits=8, stopbits=1, flowcontrol='none', timeout=1.0):
+    """
+    打开串口，并根据提供的参数配置。
+    :param device: 串口设备路径（如 '/dev/ttyUSB0' 或 'COM1'）
+    :param baudrate: 波特率（默认 9600）
+    :param parity: 奇偶校验（none, even, odd, mark, space）
+    :param databits: 数据位长度（5, 6, 7, 8）
+    :param stopbits: 停止位（1, 1.5, 2）
+    :param flowcontrol: 流控制模式（none, rtscts, xonxoff）
+    :param timeout: 读写操作的超时时间（单位：秒）
+    :param raw_mode: 如果启用 raw 模式，处理串口通信时不处理输入输出格式
+    :return: 打开的串口对象
+    """
+    # 设置字节长度映射
+    bytesize_map = {
+        5: serial.bytesize_t.fivebits,
+        6: serial.bytesize_t.sixbits,
+        7: serial.bytesize_t.sevenbits,
+        8: serial.bytesize_t.eightbits
+    }
+
+    # 设置奇偶校验映射
+    parity_map = {
+        'none': serial.parity_t.parity_none,
+        'odd': serial.parity_t.parity_odd,
+        'even': serial.parity_t.parity_even,
+        'mark': serial.parity_t.parity_mark,
+        'space': serial.parity_t.parity_space
+    }
+
+    # 设置停止位映射
+    stopbits_map = {
+        1: serial.stopbits_t.stopbits_one,
+        2: serial.stopbits_t.stopbits_two,
+        3: serial.stopbits_t.stopbits_one_point_five
+    }
+
+    # 设置流控制映射
+    flowcontrol_map = {
+        'none': serial.flowcontrol_t.flowcontrol_none,
+        'software': serial.flowcontrol_t.flowcontrol_software,
+        'hardware': serial.flowcontrol_t.flowcontrol_hardware
+    }
+
+    # 检查输入的参数是否正确
+    if databits not in bytesize_map:
+        raise ValueError(f"Unsupported databits: {databits}")
+    if parity not in parity_map:
+        raise ValueError(f"Unsupported parity: {parity}")
+    if stopbits not in stopbits_map:
+        raise ValueError(f"Unsupported stopbits: {stopbits}")
+    if flowcontrol not in flowcontrol_map:
+        raise ValueError(f"Unsupported flowcontrol: {flowcontrol}")
+
+    # 创建串口对象
+    try:
+        ser = serial.Serial(
+            port=device,
+            baudrate=baudrate,
+            timeout=serial.Timeout.simpleTimeout(int(timeout * 1000)),  # 将超时从秒转换为毫秒
+            bytesize=bytesize_map[databits],
+            parity=parity_map[parity],
+            stopbits=stopbits_map[stopbits],
+            flowcontrol=flowcontrol_map[flowcontrol]
+        )
+
+        # 打开串口
+        # ser.open()
+        if not ser.isOpen():
+            raise Exception(f"Failed to open serial port: {device}")
+
+        return ser
+
+    except Exception as e:
+        raise Exception(f"Error opening serial port: {str(e)}")
+
+
+def read_from_serial(ser, stop_event):
+    """独立线程，用于从串口接收数据（以字节形式处理，不进行解码）"""
+    try:
+        while not stop_event.is_set():
+            available_bytes = ser.available()
+            if available_bytes > 0:
+                buffer, bytes_read = ser.read(available_bytes)
+
+                # 将 list 转换为 bytearray
+                byte_buffer = bytearray(buffer)
+
+                hex_string = byte_buffer.hex().upper()  # 转换为大写
+                formatted_hex_string = ' '.join([hex_string[i:i + 2] for i in range(0, len(hex_string), 2)])
+
+                # 打印格式化后的十六进制字符串
+                print(f"\n收到数据: {formatted_hex_string}")
+                print()
+                print()
+            else:
+                # 如果没有数据可读，延时避免高CPU占用
+                time.sleep(0.1)
+    except Exception as e:
+        print(f"读取串口数据时出错: {e}")
+
+
+def continuous_mode(ser):
+    """持续收发模式，支持十六进制输入"""
+    stop_event = threading.Event()  # 用于控制线程退出
+    read_thread = threading.Thread(target=read_from_serial, args=(ser, stop_event))
+    read_thread.start()  # 启动串口读取线程
+
+    try:
+        print("进入持续收发模式 (按 Ctrl+C 退出)")
+        while True:
+            # 用户输入数据并发送（支持十六进制输入）
+            user_input = input("输入要发送的 hex 数据 (按 Ctrl+C 退出): ").strip()
+
+            try:
+                # 将用户输入的十六进制字符串转换为字节
+                byte_data = bytes.fromhex(user_input)
+                ser.write(byte_data)
+
+                hex_string = byte_data.hex().upper()  # 转换为大写
+                formatted_hex_string = ' '.join([hex_string[i:i + 2] for i in range(0, len(hex_string), 2)])
+
+                print(f"发送数据: {formatted_hex_string}")
+
+                time.sleep(0.3)
+            except ValueError:
+                print("无效的十六进制输入，请重新输入。")
+    except KeyboardInterrupt:
+        print("退出持续收发模式")
+    finally:
+        # 设置停止标志并等待接收线程退出
+        # stop_event.set()
+        # read_thread.join()
+        ser.close()
+        print("串口已关闭")
 
 
 def main():
@@ -30,17 +170,17 @@ def main():
     parser.add_argument('-b', '--baudrate', type=int, default=9600, help='设置波特率 (默认: 9600)')
 
     # 奇偶校验
-    parser.add_argument('-p', '--parity', choices=['none', 'even', 'odd'], default='none',
+    parser.add_argument('-p', '--parity', choices=['none', 'odd', 'even', 'mark', 'space'], default='none',
                         help='设置奇偶校验模式 (默认: none)')
 
     # 数据位
-    parser.add_argument('-d', '--databits', type=int, choices=[7, 8], default=8, help='设置数据位长度 (默认: 8)')
+    parser.add_argument('-d', '--databits', type=int, choices=[5, 6, 7, 8], default=8, help='设置数据位长度 (默认: 8)')
 
     # 停止位
-    parser.add_argument('-s', '--stopbits', type=float, choices=[1, 1.5, 2], default=1, help='设置停止位 (默认: 1)')
+    parser.add_argument('-s', '--stopbits', type=float, choices=[1, 2, 3], default=1, help='设置停止位 (默认: 1)')
 
     # 流控制
-    parser.add_argument('-f', '--flowcontrol', choices=['none', 'rtscts', 'xonxoff'], default='none',
+    parser.add_argument('-f', '--flowcontrol', choices=['none', 'software', 'hardware'], default='none',
                         help='设置流控制模式 (默认: none)')
 
     # 超时时间
@@ -49,14 +189,11 @@ def main():
     # 列出串口设备
     parser.add_argument('-l', '--list', action='store_true', help='列出当前系统中所有可用的串口设备')
 
-    # 持续收发模式
-    parser.add_argument('-C', '--continuous', action='store_true', help='进入持续收发模式')
+    # 持续收发模式 (raw 模式)
+    parser.add_argument('-r', '--raw', action='store_true', help='进入持续收发模式')
 
-    # 详细模式
-    parser.add_argument('-v', '--verbose', action='store_true', help='启用详细模式，打印调试信息')
-
-    # raw模式
-    parser.add_argument('-r', '--raw', action='store_true', help='以 raw 模式打开串口')
+    # 显示版本号
+    parser.add_argument('-v', '--version', action='version', version=f'%(prog)s {VERSION}', help='显示版本信息')
 
     # 解析参数
     args = parser.parse_args()
@@ -64,7 +201,7 @@ def main():
     if args.list:
         list_serial_ports()
     elif args.device:
-        open_serial(
+        ser = open_serial(
             device=args.device,
             baudrate=args.baudrate,
             parity=args.parity,
@@ -72,8 +209,10 @@ def main():
             stopbits=args.stopbits,
             flowcontrol=args.flowcontrol,
             timeout=args.timeout,
-            raw_mode=args.raw,
         )
+
+        if ser and args.raw:
+            continuous_mode(ser)
     else:
         parser.print_help()
 
