@@ -59,7 +59,7 @@ PYBIND11_MODULE(up_core, m) {
             .def("what", &gpio::GPIOException::what);
 
     // ADC
-    py::class_<adc::ADC>(m, "ADC")
+    py::class_<adc::ADC, std::shared_ptr<adc::ADC>>(m, "ADC")
             .def(py::init<spi::SPI &, uint8_t>(), py::arg("spi"), py::arg("channel_count"), "构造 ADC 对象")
             .def("init", &adc::ADC::init, "初始化 ADC")
             .def("read_channel", &adc::ADC::readChannel, py::arg("channel"), "读取单个 ADC 通道")
@@ -70,7 +70,7 @@ PYBIND11_MODULE(up_core, m) {
             .def("what", &adc::ADCException::what);
 
     // SPI
-    py::class_<spi::SPI>(m, "SPI")
+    py::class_<spi::SPI, std::shared_ptr<spi::SPI>>(m, "SPI")
             .def(py::init<const std::string &, uint32_t, uint8_t, uint8_t>(),
                  py::arg("device"), py::arg("speed"), py::arg("mode"), py::arg("bits_per_word"),
                  "构造 SPI 对象")

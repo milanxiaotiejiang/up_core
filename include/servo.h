@@ -79,7 +79,7 @@ public:
 
     // 设置数据接收回调
     void setDataCallback(DataCallback callback) {
-        dataCallback = callback;
+        dataCallback = std::move(callback);
     }
 
 private:

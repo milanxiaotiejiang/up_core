@@ -51,7 +51,8 @@ setup(
     author="noodles",  # 作者
     author_email="milanxiaotiejiang@email.com",  # 作者邮箱
     description="A core library for up_core project",  # 简短描述
-    long_description="This is a core library for the up_core project, which includes various functionalities like GPIO handling, serial communication, etc.",  # 详细描述（可留空）
+    long_description="This is a core library for the up_core project, which includes various functionalities like GPIO handling, serial communication, etc.",
+    # 详细描述（可留空）
     py_modules=['up'],  # 纯 Python 模块
     install_requires=[],  # 依赖项
     entry_points={  # 命令行工具入口

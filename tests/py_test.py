@@ -1,4 +1,7 @@
 import time
+import sys
+
+print(sys.path)
 
 import up_core as up
 from up_core import LogLevel

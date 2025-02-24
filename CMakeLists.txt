@@ -135,7 +135,7 @@ message(STATUS "GTEST_BOTH_LIBRARIES:" ${GTEST_BOTH_LIBRARIES})
 
 ## Tests
 # 创建一个测试可执行文件
-add_executable(serial_tests tests/test_serial.cpp tests/test_servo.cpp)
+add_executable(serial_tests tests/test_add.cpp tests/test_servo_protocol.cpp)
 target_link_libraries(serial_tests GTest::GTest GTest::Main up_core_base)
 
 # 添加测试到 CTest
