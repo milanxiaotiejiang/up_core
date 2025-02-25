@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package response;
+
+// Response 消息结构
+message Response {
+  string id = 1;              // 响应的唯一标识符
+  bytes data = 2;             // 响应数据，支持二进制数据
+  int64 timestamp = 3;        // 响应时间戳
+  string data_type = 4;       // 数据类型（如 "json", "text", "xml" 等）
+  string error_code = 5;      // 错误码（如果有的话）
+}

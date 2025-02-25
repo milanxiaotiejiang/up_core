@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pup_core.http_routes import serial_router, status_router
-from pup_core.ws_routes import notifications_router, chat_router
+from pup_core.ws_routes import notifications_router, message_router
 
 app = FastAPI()
 
@@ -20,4 +20,4 @@ app.include_router(status_router, prefix="/status")
 
 # 包含 WebSocket 路由
 app.include_router(notifications_router, prefix="/ws/notifications")
-app.include_router(chat_router, prefix="/ws/chat")
+app.include_router(message_router, prefix="/ws/message")

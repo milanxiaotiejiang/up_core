@@ -6,7 +6,7 @@ chat_clients = []
 
 
 @websocket_router.websocket("")
-async def websocket_chat(websocket: WebSocket):
+async def websocket_message(websocket: WebSocket):
     await websocket.accept()
     chat_clients.append(websocket)
 

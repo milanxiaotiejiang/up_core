@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package request;
+
+// Request 消息结构
+message Request {
+  string id = 1;            // 请求的唯一标识符
+  bytes data = 2;           // 请求数据，支持二进制数据
+  int64 timestamp = 3;      // 请求时间戳
+  string data_type = 4;     // 数据类型（如 "json", "text", "xml" 等）
+}
