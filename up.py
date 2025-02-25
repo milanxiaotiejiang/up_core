@@ -57,9 +57,9 @@ def clean_project():
         shutil.rmtree("dist")
         print("dist directory cleaned up.")
 
-    if os.path.exists("up_core.egg-info"):
-        shutil.rmtree("up_core.egg-info")
-        print("up_core.egg-info directory cleaned up.")
+    if os.path.exists("pup_core.egg-info"):
+        shutil.rmtree("pup_core.egg-info")
+        print("pup_core.egg-info directory cleaned up.")
 
 
 def main():

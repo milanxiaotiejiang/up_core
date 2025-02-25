@@ -1,3 +1,5 @@
+This is a core library for the up_core project,
+which includes various functionalities like GPIO handling, serial communication, etc.
 
 ```shell
 ./scripts/env.sh
