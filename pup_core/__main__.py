@@ -16,7 +16,7 @@ LOG_LEVEL_MAP = {
 @click.option('--host', '-h', default='0.0.0.0', help='Host to run the server on')
 @click.option('--port', '-p', default=8000, help='Port to run the server on')
 @click.option('--reload', '-r', is_flag=True, help='Enable auto-reload for development')
-@click.option('--log-level', '-l', default='debug',
+@click.option('--log-level', '-l', default='info',
               type=click.Choice(['debug', 'info', 'warning', 'error'], case_sensitive=False), help='Set the log level')
 def cli(host, port, reload, log_level):
     """启动 pup_core 服务器，支持多个参数"""

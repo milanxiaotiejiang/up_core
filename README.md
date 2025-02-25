@@ -10,3 +10,8 @@ up build whl
 
 up clean
 ```
+
+
+```shell
+pip show
+```
