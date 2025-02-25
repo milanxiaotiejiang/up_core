@@ -1,11 +1,10 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 import logging
-from ..proto import message_pb2
+from pup_core.proto import Notification
 
 logger = logging.getLogger("uvicorn")
 
 websocket_router = APIRouter()
-
 clients = []
 
 
@@ -22,14 +21,14 @@ async def websocket_notifications(websocket: WebSocket):
             data = await websocket.receive_bytes()
 
             # 将二进制数据反序列化为 protobuf 消息
-            notification = message_pb2.Notification()
+            notification = Notification()
             notification.ParseFromString(data)
 
             # 处理接收到的消息（可以根据需要修改）
             logger.info(f"Received notification: {notification.message}")
 
             # 响应客户端（可以根据需要修改）
-            response = message_pb2.Notification()
+            response = Notification()
             response.message = f"Notification received: {notification.message}"
 
             # 序列化消息并发送回客户端

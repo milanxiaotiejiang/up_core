@@ -1,5 +1,9 @@
 import asyncio
 import websockets
+import json
+from pup_core.proto import Request
+from pup_core.proto import Response
+
 
 # async def connect():
 #     uri = "ws://127.0.0.1:8000/ws/notifications"  # WebSocket 服务的 URL
@@ -17,31 +21,28 @@ import websockets
 # asyncio.get_event_loop().run_until_complete(connect())
 
 
-from pup_core.proto import message_pb2  # 导入生成的 protobuf 文件
-
-
 async def send_notification():
     uri = "ws://localhost:8000/ws/notifications"
     async with websockets.connect(uri) as websocket:
-        # 创建一个 Notification 消息
-        notification = message_pb2.Notification()
-        notification.message = "Hello, server!"
-        notification.timestamp = 1625194261
+        # 创建一个 Request 消息
+        request = Request(
+            id="12345",
+            data=json.dumps({"message": "Hello, server!"}).encode('utf-8'),
+            timestamp=1638463712,
+            data_type="json"
+        )
 
-        # 序列化为二进制数据
-        serialized_data = notification.SerializeToString()
+        # 序列化 Request 消息
+        await websocket.send(request.SerializeToString())
 
-        # 发送二进制数据
-        await websocket.send(serialized_data)
+        # 接收响应
+        response_data = await websocket.recv()
 
-        # 接收服务器的响应
-        response = await websocket.recv()
+        # 反序列化为 Response 消息
+        response = Response()
+        response.ParseFromString(response_data)
 
-        # 反序列化服务器返回的数据
-        response_message = message_pb2.Notification()
-        response_message.ParseFromString(response)
-
-        print(f"Received from server: {response_message.message}")
+        print(f"Received Response: ID={response.id}, Data={response.data}, Timestamp={response.timestamp}")
 
 
 # 启动客户端
