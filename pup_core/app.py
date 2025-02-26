@@ -2,7 +2,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pup_core.http_routes import serial_router, status_router
 from pup_core.ws_routes import notifications_router, message_router
-import serial_manager as sm
 
 app = FastAPI()
 
@@ -22,15 +21,3 @@ app.include_router(status_router, prefix="/status")
 # 包含 WebSocket 路由
 app.include_router(notifications_router, prefix="/ws/notifications")
 app.include_router(message_router, prefix="/ws/message")
-
-serial_manager = sm.SerialManager()
-serial_id = serial_manager.open_serial("/dev/ttyUSB0", 1000000)
-byte_buffer = serial_manager.write(serial_id, bytes.fromhex('FF FF 01 03 00 0A F1'))
-
-hex_string = byte_buffer.hex().upper()  # 转换为大写
-formatted_hex_string = ' '.join([hex_string[i:i + 2] for i in range(0, len(hex_string), 2)])
-
-# 打印格式化后的十六进制字符串
-print(f"\n收到数据: {formatted_hex_string}")
-print()
-print()

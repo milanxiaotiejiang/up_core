@@ -1,7 +1,7 @@
 import up_core as serial
 
 
-def _open_serial(device, baudrate=9600, parity='none', databits=8, stopbits=1, flowcontrol='none', timeout=1.0):
+def open_serial(device, baudrate=9600, parity='none', databits=8, stopbits=1, flowcontrol='none', timeout=1.0):
     """
     打开串口，并根据提供的参数配置。
     :param device: 串口设备路径（如 '/dev/ttyUSB0' 或 'COM1'）
@@ -78,7 +78,7 @@ def _open_serial(device, baudrate=9600, parity='none', databits=8, stopbits=1, f
         raise Exception(f"Error opening serial port: {str(e)}")
 
 
-def _close_serial(ser):
+def close_serial(ser):
     """
     关闭串口。
     :param ser: 串口对象
@@ -87,7 +87,7 @@ def _close_serial(ser):
         ser.close()
 
 
-def _list_serial_ports():
+def list_serial_ports():
     """
     列出所有可用的串口设备，并打印信息。
     """
@@ -107,7 +107,7 @@ def _list_serial_ports():
     return port_list
 
 
-def _write(ser, data: bytes):
+def write(ser, data: bytes):
     """
     向串口发送数据。
     :param ser: 串口对象
@@ -127,7 +127,7 @@ def _write(ser, data: bytes):
     return ser.waitReadable()
 
 
-def _read(ser, available_bytes):
+def read(ser, available_bytes):
     """
     从串口读取数据。
     :param ser: 串口对象

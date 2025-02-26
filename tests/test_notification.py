@@ -1,5 +1,6 @@
 import time
 from pup_core.proto import Notification
+import pytest
 
 
 def create_notification(title: str, message: str, sender: str, receiver: str):
@@ -25,32 +26,44 @@ def deserialize_notification(serialized_data):
     return notification
 
 
-# 示例使用
-notification = create_notification(
-    title="System Update",
-    message="Your system will be updated at midnight.",
-    sender="System Admin",
-    receiver="User123"
-)
+# Test functions
+def test_create_notification():
+    notification = create_notification(
+        title="System Update",
+        message="Your system will be updated at midnight.",
+        sender="System Admin",
+        receiver="User123"
+    )
+    assert notification.title == "System Update"
+    assert notification.message == "Your system will be updated at midnight."
+    assert notification.sender == "System Admin"
+    assert notification.receiver == "User123"
+    assert isinstance(notification.timestamp, int)  # Ensure timestamp is an integer
 
-# 打印通知内容
-print(f"Notification:\n"
-      f"Title: {notification.title}\n"
-      f"Message: {notification.message}\n"
-      f"Sender: {notification.sender}\n"
-      f"Receiver: {notification.receiver}\n"
-      f"Timestamp: {notification.timestamp}")
 
-# 序列化通知对象
-serialized_data = serialize_notification(notification)
+def test_serialize_notification():
+    notification = create_notification(
+        title="System Update",
+        message="Your system will be updated at midnight.",
+        sender="System Admin",
+        receiver="User123"
+    )
+    serialized_data = serialize_notification(notification)
+    assert isinstance(serialized_data, bytes)  # Ensure serialized data is in bytes
 
-# 反序列化通知对象
-deserialized_notification = deserialize_notification(serialized_data)
 
-# 打印反序列化后的通知内容
-print(f"\nDeserialized Notification:\n"
-      f"Title: {deserialized_notification.title}\n"
-      f"Message: {deserialized_notification.message}\n"
-      f"Sender: {deserialized_notification.sender}\n"
-      f"Receiver: {deserialized_notification.receiver}\n"
-      f"Timestamp: {deserialized_notification.timestamp}")
+def test_deserialize_notification():
+    notification = create_notification(
+        title="System Update",
+        message="Your system will be updated at midnight.",
+        sender="System Admin",
+        receiver="User123"
+    )
+    serialized_data = serialize_notification(notification)
+    deserialized_notification = deserialize_notification(serialized_data)
+
+    assert deserialized_notification.title == notification.title
+    assert deserialized_notification.message == notification.message
+    assert deserialized_notification.sender == notification.sender
+    assert deserialized_notification.receiver == notification.receiver
+    assert deserialized_notification.timestamp == notification.timestamp

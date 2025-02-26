@@ -3,6 +3,7 @@ from pup_core.proto import Request
 from pup_core.proto import Response
 import json
 import time
+import logging
 
 websocket_router = APIRouter()
 
@@ -33,7 +34,7 @@ async def websocket_message(websocket: WebSocket):
                 # 默认处理文本数据
                 data_dict = data.decode("utf-8")
 
-            print(f"Received data: {data_dict} (type: {data_type})")
+            logging.info(f"Received data: {data_dict} (type: {data_type})")
 
             # 创建响应的 Response 对象
             response = Response(
