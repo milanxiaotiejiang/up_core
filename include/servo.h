@@ -16,6 +16,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <functional>
+#include <unordered_map>
 
 /**
  * 1. 指令包格式
@@ -71,8 +72,10 @@ public:
     /** @brief 发送指令 */
     bool sendCommand(const std::vector<uint8_t> &frame);
 
+    bool sendWaitCommand(const std::vector<uint8_t> &frame, std::vector<uint8_t> &response_data);
+
     /** @brief 解析串口数据 */
-    void performSerialData(const std::vector<uint8_t> &packet);
+    bool performSerialData(const std::vector<uint8_t> &packet);
 
     // 注册回调函数类型
     using DataCallback = std::function<void(const std::vector<uint8_t> &)>;
@@ -88,10 +91,26 @@ private:
 
     bool gpio_enabled = false;
 
-    std::thread serialThread;
-    std::atomic<bool> running{false};  // 控制线程运行状态
+    // 接收数据的线程
+    std::thread receive_thread;
+    // 控制接收线程是否运行的标志
+    std::atomic<bool> running{false};
 
     DataCallback dataCallback;
+
+    // 用于存放接收到的数据，按消息 ID 存储
+    std::unordered_map<uint32_t, std::vector<uint8_t>> received_data_;
+    // 存储每个消息 ID 对应的条件变量
+    std::unordered_map<uint32_t, std::unique_ptr<std::condition_variable>> message_conditions_;
+    // 用于保护接收到的数据和发送过程的互斥锁
+    std::mutex mutex_;
+    // 消息 ID 计数器
+    uint32_t message_counter;
+
+    // 生成唯一的消息 ID
+    uint32_t generateMessageId() {
+        return ++message_counter;  // 简单的递增 ID 生成策略
+    }
 
     void processSerialData();
 

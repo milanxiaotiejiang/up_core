@@ -1,9 +1,33 @@
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pup_core.http_routes import serial_router, status_router
+from pup_core.model.response_models import ErrorResponse
 from pup_core.ws_routes import notifications_router, message_router
 
 app = FastAPI()
+
+
+# 全局异常处理
+@app.exception_handler(Exception)
+async def general_exception_handler(request, exc):
+    # 这里可以根据异常类型进行处理，也可以直接返回通用的错误信息
+    logging.exception(f"Unhandled error: {exc}")
+    return ErrorResponse(
+        status_code=500,
+        content={"detail": "An internal server error occurred."}
+    )
+
+
+@app.exception_handler(ValueError)
+async def value_error_exception_handler(request, exc):
+    logging.error(f"ValueError: {exc}")
+    return ErrorResponse(
+        status_code=400,
+        content={"detail": str(exc)}
+    )
+
 
 # 允许跨域请求
 app.add_middleware(

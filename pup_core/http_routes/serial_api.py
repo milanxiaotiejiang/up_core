@@ -1,4 +1,5 @@
 import logging
+from urllib.request import Request
 
 import up_core as serial
 from fastapi import APIRouter, Depends, HTTPException
@@ -9,7 +10,8 @@ from pup_core.proto import Response
 from pup_core.model import request_models
 import time
 
-from ..model.request_models import HttpRequest
+from ..exceptions import handle_exceptions
+from ..model.request_models import HttpRequest, SerialRequest
 from ..model.response_models import BaseResponse
 from ..model.response_models import SuccessResponse
 from ..model.response_models import ErrorResponse
@@ -17,35 +19,37 @@ from ..model.response_models import ErrorResponse
 router = APIRouter()
 
 
-@router.get("/open")
-def open(serial_manager=Depends(get_serial_manager)):
-    try:
-        serial_id = serial_manager.open_serial("/dev/ttyUSB0", 1000000)
-        return SuccessResponse(status=True, data=serial_id)
-    except Exception as e:
-        logging.exception("serial_api open: %s", e)
-        raise HTTPException(status_code=500, detail="An error occurred while processing the request.")
+@router.post("/open")
+@handle_exceptions
+async def open(serial_manager=Depends(get_serial_manager)):
+    serial_id = serial_manager.open("/dev/ttyUSB0", 1000000)
+    return SuccessResponse(status=True, data=serial_id)
+
+
+@router.post("/close")
+@handle_exceptions
+async def close(request: SerialRequest, serial_manager=Depends(get_serial_manager)):
+    serial_manager.close(request.serial_id)
+    return SuccessResponse(status=True)
 
 
 @router.post("/get_version")
-def get_version(request: HttpRequest, serial_manager=Depends(get_serial_manager)):
-    try:
-        # 创建 ServoProtocol 实例
-        servoProtocol = ServoProtocol(request.protocol_id)
+@handle_exceptions
+async def get_version(request: HttpRequest, serial_manager=Depends(get_serial_manager)):
+    # 创建 ServoProtocol 实例
+    servoProtocol = ServoProtocol(request.protocol_id)
 
-        # 使用协议构建数据，这里假设是获取版本的命令
-        data = servoProtocol.eeprom.buildGetSoftwareVersion()
+    # 使用协议构建数据，这里假设是获取版本的命令
+    data = servoProtocol.eeprom.buildGetSoftwareVersion()
 
-        # 发送数据并获取返回数据
-        byte_buffer = serial_manager.write(request.serial_id, data)
+    # 发送数据并获取返回数据
+    byte_buffer = serial_manager.write_wait(request.serial_id, data)
 
-        # 返回标准的HTTP响应格式
-        return SuccessResponse(status=True, data=byte_buffer.hex().upper())
-    except ValueError as e:
-        # 如果串口没有找到，或者写入失败等情况，返回错误
-        return ErrorResponse(status=False, message=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="An error occurred while processing the request.")
+    if byte_buffer is None:
+        return ErrorResponse(status=False, message="No response received.")
+
+    # 返回标准的HTTP响应格式
+    return SuccessResponse(status=True, data=byte_buffer.hex().upper())
 
 
 def list_serial_ports():

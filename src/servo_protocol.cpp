@@ -73,7 +73,7 @@ namespace servo {
         // 计算校验和
         packet.push_back(calculateChecksum(packet)); // 校验和
 
-        Logger::debug("发送指令包: " + bytesToHex(packet));
+//        Logger::debug("发送指令包: " + bytesToHex(packet));
 
         return packet;
     }
