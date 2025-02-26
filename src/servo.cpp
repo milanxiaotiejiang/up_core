@@ -103,6 +103,9 @@ bool Servo::sendWaitCommand(const std::vector<uint8_t> &frame, std::vector<uint8
         return false;
     }
 
+    // 使用锁来确保单线程执行
+    std::lock_guard<std::mutex> lock(send_mutex);
+
     // 为每条命令生成一个唯一的消息 ID
     uint32_t message_id = generateMessageId();
 
@@ -112,7 +115,7 @@ bool Servo::sendWaitCommand(const std::vector<uint8_t> &frame, std::vector<uint8
 //    frame_with_id.push_back(static_cast<uint8_t>((message_id >> 8) & 0xFF));  // 添加高字节
 
     // 创建一个条件变量和锁，用于等待此消息的响应
-    std::unique_lock<std::mutex> lock(mutex_);
+    std::unique_lock<std::mutex> wait_lock(mutex_);
     auto cv = std::make_unique<std::condition_variable>();
     message_conditions_[message_id] = std::move(cv);
 
@@ -133,7 +136,7 @@ bool Servo::sendWaitCommand(const std::vector<uint8_t> &frame, std::vector<uint8
     auto timeout = std::chrono::steady_clock::now() + std::chrono::milliseconds(5000);
 
     // 使用 wait_for，等待指定时间或条件变量被通知
-    if (message_conditions_[message_id]->wait_until(lock, timeout, [this, message_id] {
+    if (message_conditions_[message_id]->wait_until(wait_lock, timeout, [this, message_id] {
         // 判断条件是等待接收到数据
         return received_data_.count(message_id) > 0;  // 如果已接收到该 message_id 的数据
     })) {

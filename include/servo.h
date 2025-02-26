@@ -107,6 +107,9 @@ private:
     // 消息 ID 计数器
     uint32_t message_counter;
 
+    // 声明全局锁对象，确保单线程执行
+    std::mutex send_mutex;
+
     // 生成唯一的消息 ID
     uint32_t generateMessageId() {
         return ++message_counter;  // 简单的递增 ID 生成策略
