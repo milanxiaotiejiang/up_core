@@ -1,4 +1,15 @@
 from pydantic import BaseModel, conint
+from typing import Optional
+
+
+class OpenSerialRequest(BaseModel):
+    device: str
+    baudrate: Optional[int] = 9600
+    parity: Optional[str] = 'none'
+    databits: Optional[int] = 8
+    stopbits: Optional[int] = 1
+    flowcontrol: Optional[str] = 'none'
+    timeout: Optional[float] = 3.0
 
 
 class SerialRequest(BaseModel):

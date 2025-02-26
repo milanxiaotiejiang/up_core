@@ -15,3 +15,7 @@ up clean
 ```shell
 pip show
 ```
+
+```shell
+uio -r -b 1000000  /dev/ttyUSB0
+```

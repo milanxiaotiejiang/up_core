@@ -31,7 +31,7 @@ class SerialManager:
         self.receive_threads = {}  # 存储接收线程，用于管理线程退出
 
     def open(self, device, baudrate=9600, parity='none', databits=8,
-                    stopbits=1, flowcontrol='none', timeout=1.0):
+             stopbits=1, flowcontrol='none', timeout=1.0):
         """
         打开串口，并创建一个 SerialPort 实例。
         如果串口已存在并打开，则直接返回对应的串口 ID。
@@ -96,7 +96,7 @@ class SerialManager:
         else:
             raise ValueError(f"Serial port {serial_id} not found.")
 
-    def _wait_for_response(self, serial_port, timeout: int = 3, retries: int = 3):
+    def _wait_for_response(self, serial_port, timeout: int = 3, retries: int = 1):
         """
         等待串口返回的数据，最多等待 timeout 秒。
         """
@@ -110,7 +110,7 @@ class SerialManager:
                     return data
                 time.sleep(0.1)
             attempt += 1
-            logging.warning(f"Retrying to receive data from serial port {serial_port.ser.portstr}, attempt {attempt}")
+            logging.warning(f"Retrying to receive data from serial port {serial_port.ser.getPort()}, attempt {attempt}")
         return None  # 超时未收到响应
 
     def _receive_data(self, serial_id: str):

@@ -11,7 +11,7 @@ from pup_core.model import request_models
 import time
 
 from ..exceptions import handle_exceptions
-from ..model.request_models import HttpRequest, SerialRequest
+from ..model.request_models import HttpRequest, SerialRequest, OpenSerialRequest
 from ..model.response_models import BaseResponse
 from ..model.response_models import SuccessResponse
 from ..model.response_models import ErrorResponse
@@ -21,8 +21,9 @@ router = APIRouter()
 
 @router.post("/open")
 @handle_exceptions
-async def open(serial_manager=Depends(get_serial_manager)):
-    serial_id = serial_manager.open("/dev/ttyUSB0", 1000000)
+async def open(request: OpenSerialRequest, serial_manager=Depends(get_serial_manager)):
+    serial_id = serial_manager.open(request.device, request.baudrate, request.parity, request.databits,
+                                    request.stopbits, request.flowcontrol, request.timeout)
     return SuccessResponse(status=True, data=serial_id)
 
 
