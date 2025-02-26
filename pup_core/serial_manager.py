@@ -7,6 +7,9 @@ from typing import Dict
 import time
 import logging
 
+from pup_core.model.up_core import UpErrorCode
+from pup_core.model.up_exception import SerialException
+
 
 def list_serial_ports():
     """
@@ -70,7 +73,7 @@ class SerialManager:
                     self.receive_threads[serial_id].join()  # 确保接收线程退出
                     del self.receive_threads[serial_id]
             else:
-                raise ValueError(f"Serial port {serial_id} not found.")
+                raise SerialException(UpErrorCode.SERIAL_NOT_FOUND, f"Serial port {serial_id} not found.")
 
     def write(self, serial_id: str, data: bytes):
         """
@@ -80,7 +83,7 @@ class SerialManager:
             serial_port = self.serial_ports[serial_id]
             return cs.write(serial_port.ser, data)
         else:
-            raise ValueError(f"Serial port {serial_id} not found.")
+            raise SerialException(UpErrorCode.SERIAL_NOT_FOUND, f"Serial port {serial_id} not found.")
 
     def write_wait(self, serial_id: str, data: bytes):
         """
@@ -92,9 +95,10 @@ class SerialManager:
                 if cs.write(serial_port.ser, data):  # 调用底层写入方法
                     return self._wait_for_response(serial_port)  # 等待响应
                 else:
-                    raise ValueError(f"Failed to write data to serial port {serial_id}.")
+                    raise SerialException(UpErrorCode.WRITE_DATA_FAILED,
+                                          f"Failed to write data to serial port {serial_id}.")
         else:
-            raise ValueError(f"Serial port {serial_id} not found.")
+            raise SerialException(UpErrorCode.SERIAL_NOT_FOUND, f"Serial port {serial_id} not found.")
 
     def _wait_for_response(self, serial_port, timeout: int = 3, retries: int = 1):
         """

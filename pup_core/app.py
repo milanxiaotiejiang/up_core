@@ -1,7 +1,9 @@
 import logging
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
 from pup_core.http_routes import serial_router, status_router
 from pup_core.model.response_models import ErrorResponse
 from pup_core.ws_routes import notifications_router, message_router
@@ -11,21 +13,35 @@ app = FastAPI()
 
 # 全局异常处理
 @app.exception_handler(Exception)
-async def general_exception_handler(request, exc):
-    # 这里可以根据异常类型进行处理，也可以直接返回通用的错误信息
-    logging.exception(f"Unhandled error: {exc}")
-    return ErrorResponse(
-        status_code=500,
-        content={"detail": "An internal server error occurred."}
+async def general_exception_handler(request: Request, exc: Exception):
+    """全局异常处理，兜底处理未捕获的错误"""
+
+    # 获取请求的 URL、方法和客户端 IP
+    request_info = {
+        "method": request.method,
+        "url": str(request.url),
+        "client_ip": request.client.host if request.client else "Unknown",
+    }
+
+    # 尝试获取请求体
+    try:
+        body = await request.json()
+    except Exception:
+        body = "Unable to retrieve body (non-JSON or large file)"
+
+    # 记录详细日志
+    logging.exception(
+        f"Unhandled error occurred!\n"
+        f"Request Info: {request_info}\n"
+        f"Request Body: {body}\n"
+        f"Exception: {exc}"
     )
 
-
-@app.exception_handler(ValueError)
-async def value_error_exception_handler(request, exc):
-    logging.error(f"ValueError: {exc}")
-    return ErrorResponse(
-        status_code=400,
-        content={"detail": str(exc)}
+    # 统一返回错误响应
+    error_response = ErrorResponse(code=500, message="Internal Server Error")
+    return JSONResponse(
+        status_code=500,
+        content=error_response.dict()
     )
 
 

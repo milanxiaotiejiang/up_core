@@ -1,5 +1,8 @@
 import up_core as serial
 
+from pup_core.model.up_core import UpErrorCode
+from pup_core.model.up_exception import SerialException
+
 
 def open_serial(device, baudrate=9600, parity='none', databits=8, stopbits=1, flowcontrol='none', timeout=1.0):
     """
@@ -70,12 +73,12 @@ def open_serial(device, baudrate=9600, parity='none', databits=8, stopbits=1, fl
         # 打开串口
         # ser.open()
         if not ser.isOpen():
-            raise Exception(f"Failed to open serial port: {device}")
+            raise SerialException(UpErrorCode.OPEN_SERIAL_FAILED, "Failed to open serial port.")
 
         return ser
 
     except Exception as e:
-        raise Exception(f"Error opening serial port: {str(e)}")
+        raise SerialException(UpErrorCode.UNDER_ERROR, str(e))
 
 
 def close_serial(ser):
@@ -115,14 +118,14 @@ def write(ser, data: bytes):
     :return:
     """
     if not ser.isOpen():
-        raise Exception("Serial port is not open.")
+        raise SerialException(UpErrorCode.SERIAL_NOT_OPEN, "Serial port is not open.")
 
     ser.flushInput()
 
     bytes_written = ser.write(data)
 
     if bytes_written != len(data):
-        raise Exception("Failed to write all data to serial port.")
+        raise SerialException(UpErrorCode.WRITE_DATA_FAILED, "Failed to write all data to serial port.")
 
     return ser.waitReadable()
 
@@ -138,4 +141,4 @@ def read(ser, available_bytes):
         buffer, bytes_read = ser.read(available_bytes)
         return bytearray(buffer)
     else:
-        raise Exception("No data available to read from serial port.")
+        raise SerialException(UpErrorCode.NO_DATA_AVAILABLE, "No data available to read from serial port.")

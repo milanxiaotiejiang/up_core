@@ -15,6 +15,8 @@ from ..model.request_models import HttpRequest, SerialRequest, OpenSerialRequest
 from ..model.response_models import BaseResponse
 from ..model.response_models import SuccessResponse
 from ..model.response_models import ErrorResponse
+from ..servo_parser import perform_serial_data, perform_version
+from ..servo_parser import ServoError
 
 router = APIRouter()
 
@@ -49,8 +51,13 @@ async def get_version(request: HttpRequest, serial_manager=Depends(get_serial_ma
     if byte_buffer is None:
         return ErrorResponse(status=False, message="No response received.")
 
-    # 返回标准的HTTP响应格式
-    return SuccessResponse(status=True, data=byte_buffer.hex().upper())
+    error_code, payload = perform_serial_data(byte_buffer)
+
+    if error_code == ServoError.NO_ERROR:
+        error_code, version = perform_version(payload)
+        return SuccessResponse(status=True, data=version)
+    else:
+        return ErrorResponse(status=False, message="Failed to parse the response data.")
 
 
 def list_serial_ports():
