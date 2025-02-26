@@ -19,3 +19,8 @@ class SerialRequest(BaseModel):
 # 定义请求体的数据结构
 class HttpRequest(SerialRequest):
     protocol_id: conint(ge=0, le=255)
+
+
+# 定义请求体的数据结构
+class WriteRequest(SerialRequest):
+    raw_data: str

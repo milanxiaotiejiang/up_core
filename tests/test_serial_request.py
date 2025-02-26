@@ -40,6 +40,43 @@ def test_get_version(serial_id):
     assert "data" in response.json()  # 确保响应中包含 data 字段
 
 
+# 测试写入数据接口
+def test_write(serial_id):
+    # 模拟请求的数据（HEX 格式）
+    raw_data_hex = "FF FF 01 04 02 02 01 F5"
+
+    # 模拟写入请求数据
+    request_data = {
+        "serial_id": serial_id,
+        "raw_data": raw_data_hex
+    }
+
+    response = client.post("/serial/write", json=request_data)
+
+    # 确认响应成功
+    assert response.status_code == 200
+    assert response.json()["status"] is True
+
+
+# 测试带等待的写入数据接口
+def test_write_wait(serial_id):
+    # 模拟请求的数据（HEX 格式）
+    raw_data_hex = "FF FF 01 04 02 02 01 F5"
+
+    # 模拟写入并等待响应
+    request_data = {
+        "serial_id": serial_id,
+        "raw_data": raw_data_hex
+    }
+
+    response = client.post("/serial/write_wait", json=request_data)
+
+    # 确认响应成功
+    assert response.status_code == 200
+    assert response.json()["status"] is True
+    assert "data" in response.json()  # 确保响应中包含 data 字段
+
+
 # 测试关闭串口接口
 def test_close_serial(serial_id):
     request_data = {

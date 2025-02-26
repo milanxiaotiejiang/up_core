@@ -1,3 +1,4 @@
+import binascii
 import logging
 from urllib.request import Request
 
@@ -11,7 +12,7 @@ from pup_core.model import request_models
 import time
 
 from ..exceptions import handle_exceptions
-from ..model.request_models import HttpRequest, SerialRequest, OpenSerialRequest
+from ..model.request_models import HttpRequest, SerialRequest, OpenSerialRequest, WriteRequest
 from ..model.response_models import BaseResponse
 from ..model.response_models import SuccessResponse
 from ..model.response_models import ErrorResponse
@@ -60,6 +61,44 @@ async def get_version(request: HttpRequest, serial_manager=Depends(get_serial_ma
         return ErrorResponse(status=False, message="Failed to parse the response data.")
 
 
+@router.post("/write")
+@handle_exceptions
+async def get_version(request: WriteRequest, serial_manager=Depends(get_serial_manager)):
+    raw_data_hex = request.raw_data
+    try:
+        raw_data = binascii.unhexlify(raw_data_hex.replace(" ", ""))
+
+        success = serial_manager.write(request.serial_id, raw_data)
+        if success:
+            return SuccessResponse(status=True)
+        else:
+            return ErrorResponse(status=False, message="Failed to write data.")
+    except (binascii.Error, KeyError):
+        raise HTTPException(status_code=400, detail="Invalid HEX data")
+
+
+@router.post("/write_wait")
+@handle_exceptions
+async def get_version(request: WriteRequest, serial_manager=Depends(get_serial_manager)):
+    raw_data_hex = request.raw_data
+    try:
+        raw_data = binascii.unhexlify(raw_data_hex.replace(" ", ""))
+
+        byte_buffer = serial_manager.write_wait(request.serial_id, raw_data)
+
+        if byte_buffer is None:
+            return ErrorResponse(status=False, message="No response received.")
+
+        response_data = binascii.hexlify(byte_buffer).decode('utf-8')
+
+        # 每两个字符添加一个空格，便于查看
+        response_data_with_spaces = ' '.join([response_data[i:i + 2] for i in range(0, len(response_data), 2)])
+
+        return SuccessResponse(status=True, data=response_data_with_spaces)
+    except (binascii.Error, KeyError):
+        raise HTTPException(status_code=400, detail="Invalid HEX data")
+
+
 def list_serial_ports():
     """列出所有可用的串口设备，并打印信息。"""
     ports = serial.list_ports()
@@ -81,4 +120,4 @@ def list_serial_ports():
 # 示例路由
 @router.get("/list_serial_ports")
 def read_root():
-    return list_serial_ports()
+    return SuccessResponse(status=True, data=list_serial_ports())
