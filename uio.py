@@ -32,7 +32,6 @@ def open_serial(device, baudrate=9600, parity='none', databits=8, stopbits=1, fl
     :param stopbits: 停止位（1, 1.5, 2）
     :param flowcontrol: 流控制模式（none, rtscts, xonxoff）
     :param timeout: 读写操作的超时时间（单位：秒）
-    :param raw_mode: 如果启用 raw 模式，处理串口通信时不处理输入输出格式
     :return: 打开的串口对象
     """
     # 设置字节长度映射
@@ -52,11 +51,11 @@ def open_serial(device, baudrate=9600, parity='none', databits=8, stopbits=1, fl
         'space': serial.parity_t.parity_space
     }
 
-    # 设置停止位映射
+    # 设置停止位映射 - 修正了键值
     stopbits_map = {
         1: serial.stopbits_t.stopbits_one,
         2: serial.stopbits_t.stopbits_two,
-        3: serial.stopbits_t.stopbits_one_point_five
+        1.5: serial.stopbits_t.stopbits_one_point_five
     }
 
     # 设置流控制映射
@@ -88,10 +87,9 @@ def open_serial(device, baudrate=9600, parity='none', databits=8, stopbits=1, fl
             flowcontrol=flowcontrol_map[flowcontrol]
         )
 
-        # 打开串口
-        # ser.open()
+        # 确保串口已打开
         if not ser.isOpen():
-            raise Exception(f"Failed to open serial port: {device}")
+            ser.open()  # 如果没有打开，则尝试打开
 
         return ser
 
@@ -103,38 +101,51 @@ def read_from_serial(ser, stop_event):
     """独立线程，用于从串口接收数据（以字节形式处理，不进行解码）"""
     try:
         while not stop_event.is_set():
-            available_bytes = ser.available()
-            if available_bytes > 0:
-                buffer, bytes_read = ser.read(available_bytes)
+            if ser.isOpen():  # 确保串口仍然打开
+                available_bytes = ser.available()
+                if available_bytes > 0:
+                    buffer, bytes_read = ser.read(available_bytes)
 
-                # 将 list 转换为 bytearray
-                byte_buffer = bytearray(buffer)
+                    # 将 list 转换为 bytearray
+                    byte_buffer = bytearray(buffer)
 
-                hex_string = byte_buffer.hex().upper()  # 转换为大写
-                formatted_hex_string = ' '.join([hex_string[i:i + 2] for i in range(0, len(hex_string), 2)])
+                    hex_string = byte_buffer.hex().upper()  # 转换为大写
+                    formatted_hex_string = ' '.join([hex_string[i:i + 2] for i in range(0, len(hex_string), 2)])
 
-                # 打印格式化后的十六进制字符串
-                print(f"\n收到数据: {formatted_hex_string}")
-                print()
-                print()
+                    # 打印格式化后的十六进制字符串
+                    print(f"\n收到数据: {formatted_hex_string}")
+                    print()
+                    print()
+                else:
+                    # 如果没有数据可读，延时避免高CPU占用
+                    time.sleep(0.1)
             else:
-                # 如果没有数据可读，延时避免高CPU占用
-                time.sleep(0.1)
+                # 如果串口关闭，退出循环
+                print("串口已关闭，读取线程退出")
+                break
     except Exception as e:
         print(f"读取串口数据时出错: {e}")
+    finally:
+        # 确保线程正常退出时也会通知主线程
+        stop_event.set()
 
 
 def continuous_mode(ser):
     """持续收发模式，支持十六进制输入"""
     stop_event = threading.Event()  # 用于控制线程退出
     read_thread = threading.Thread(target=read_from_serial, args=(ser, stop_event))
+    read_thread.daemon = True  # 设置为守护线程，这样主线程退出时，该线程也会自动退出
     read_thread.start()  # 启动串口读取线程
 
     try:
         print("进入持续收发模式 (按 Ctrl+C 退出)")
-        while True:
+        while not stop_event.is_set():  # 检查停止事件，确保读取线程异常退出时主线程也能退出
             # 用户输入数据并发送（支持十六进制输入）
             user_input = input("输入要发送的 hex 数据 (按 Ctrl+C 退出): ").strip()
+
+            if not ser.isOpen():
+                print("串口已关闭，无法发送数据")
+                break
 
             try:
                 # 将用户输入的十六进制字符串转换为字节
@@ -153,9 +164,10 @@ def continuous_mode(ser):
         print("退出持续收发模式")
     finally:
         # 设置停止标志并等待接收线程退出
-        # stop_event.set()
-        # read_thread.join()
-        ser.close()
+        stop_event.set()
+        read_thread.join(timeout=1)  # 等待读取线程最多1秒
+        if ser.isOpen():
+            ser.close()
         print("串口已关闭")
 
 
@@ -176,8 +188,8 @@ def main():
     # 数据位
     parser.add_argument('-d', '--databits', type=int, choices=[5, 6, 7, 8], default=8, help='设置数据位长度 (默认: 8)')
 
-    # 停止位
-    parser.add_argument('-s', '--stopbits', type=float, choices=[1, 2, 3], default=1, help='设置停止位 (默认: 1)')
+    # 停止位 - 修正了选项
+    parser.add_argument('-s', '--stopbits', type=float, choices=[1, 1.5, 2], default=1, help='设置停止位 (默认: 1)')
 
     # 流控制
     parser.add_argument('-f', '--flowcontrol', choices=['none', 'software', 'hardware'], default='none',
@@ -201,18 +213,21 @@ def main():
     if args.list:
         list_serial_ports()
     elif args.device:
-        ser = open_serial(
-            device=args.device,
-            baudrate=args.baudrate,
-            parity=args.parity,
-            databits=args.databits,
-            stopbits=args.stopbits,
-            flowcontrol=args.flowcontrol,
-            timeout=args.timeout,
-        )
+        try:
+            ser = open_serial(
+                device=args.device,
+                baudrate=args.baudrate,
+                parity=args.parity,
+                databits=args.databits,
+                stopbits=args.stopbits,
+                flowcontrol=args.flowcontrol,
+                timeout=args.timeout,
+            )
 
-        if ser and args.raw:
-            continuous_mode(ser)
+            if ser and args.raw:
+                continuous_mode(ser)
+        except Exception as e:
+            print(f"错误: {e}")
     else:
         parser.print_help()
 
