@@ -54,12 +54,10 @@ async def websocket_message(websocket: WebSocket):
                         logging.info("收到心跳请求 ping，返回 pong")
                         continue
                     else:
-                        # 处理其他文本消息
                         logging.info(f"收到文本消息：{message_data}")
                         continue
 
                 elif "bytes" in message:
-
                     message_data = message["bytes"]
 
                     # 反序列化为 Request 对象
@@ -87,14 +85,13 @@ async def websocket_message(websocket: WebSocket):
 
                     # 根据处理结果设置响应的 data 和 error_code
                     if data_type == "json":
-                        # 假设我们返回一些 JSON 数据作为示例
                         response_data = "收到了你的消息，这是一个示例响应，你发送的数据是：" + json.dumps(data_dict)
                         response.data = json.dumps(response_data).encode('utf-8')
-                        response.error_code = ""  # 没有错误
+                        response.error_code = ""
                     else:
                         # 如果是其他类型的消息
                         response.data = f"Processed {data}".encode('utf-8')
-                        response.error_code = ""  # 没有错误
+                        response.error_code = ""
 
                     # 序列化响应并发送给客户端
                     await websocket.send_bytes(response.SerializeToString())
@@ -106,6 +103,10 @@ async def websocket_message(websocket: WebSocket):
                 await websocket.close()
                 break
 
+            except RuntimeError as e:
+                logging.error(f"连接出现异常: {str(e)}")
+                break
+
     except WebSocketDisconnect:
-        clients.pop(websocket, None)  # 移除断开连接的客户端
+        clients.pop(websocket, None)
         logging.info("客户端断开连接")
