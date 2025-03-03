@@ -1,3 +1,5 @@
+import uuid
+
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from pup_core.proto import Request, Response
 import json
@@ -11,102 +13,84 @@ websocket_router = APIRouter()
 clients = {}
 
 # 设置心跳包超时时间（秒）
-HEARTBEAT_TIMEOUT = 30
-
-
-# 心跳包检查器：每隔一段时间检查客户端心跳包是否超时
-async def heartbeat_checker(websocket: WebSocket):
-    while websocket in clients:
-        await asyncio.sleep(HEARTBEAT_TIMEOUT)
-
-        # 检查客户端的最后心跳时间
-        last_heartbeat = clients.get(websocket)
-        if last_heartbeat and time.time() - last_heartbeat > HEARTBEAT_TIMEOUT:
-            logging.warning(f"Client {websocket.client.host} heartbeat timeout, disconnecting...")
-            await websocket.close()  # 超时，关闭 WebSocket 连接
-            clients.pop(websocket, None)
-            break
+HEARTBEAT_TIMEOUT = 60
 
 
 @websocket_router.websocket("")
 async def websocket_message(websocket: WebSocket):
     await websocket.accept()
-    # 添加客户端到clients字典并初始化最后心跳时间
-    clients[websocket] = time.time()
 
-    # 启动心跳检查器
-    asyncio.create_task(heartbeat_checker(websocket))
+    client_key = str(uuid.uuid4())
+    clients[client_key] = {"websocket": websocket, "last_heartbeat": time.time()}
 
     try:
-        while True:
-            try:
-                # 设置超时时间为 HEARTBEAT_TIMEOUT
-                message = await asyncio.wait_for(websocket.receive(), timeout=HEARTBEAT_TIMEOUT)
-
-                # 处理收到的消息
-                if "text" in message:
-                    message_data = message["text"]
-
-                    # 处理心跳请求：收到 "ping" 返回 "pong"
-                    if message_data == "ping":
-                        await websocket.send_text("pong")
-                        clients[websocket] = time.time()  # 更新心跳时间
-                        logging.info("收到心跳请求 ping，返回 pong")
-                        continue
-                    else:
-                        logging.info(f"收到文本消息：{message_data}")
-                        continue
-
-                elif "bytes" in message:
-                    message_data = message["bytes"]
-
-                    # 反序列化为 Request 对象
-                    request = Request()
-                    request.ParseFromString(message_data)
-
-                    # 解析 data_type 并处理数据
-                    data_type = request.data_type
-                    data = request.data
-                    if data_type == "json":
-                        # 假设 data 是 JSON 格式的字节数据，解码为 JSON 字典
-                        data_dict = json.loads(data.decode("utf-8"))
-                    else:
-                        # 默认处理文本数据
-                        data_dict = data.decode("utf-8")
-
-                    logging.info(f"Received data: {data_dict} (type: {data_type})")
-
-                    # 创建响应的 Response 对象
-                    response = Response(
-                        id=request.id,  # 使用相同的 id
-                        timestamp=int(time.time()),  # 当前时间戳
-                        data_type=data_type,  # 保持相同的数据类型
-                    )
-
-                    # 根据处理结果设置响应的 data 和 error_code
-                    if data_type == "json":
-                        response_data = "收到了你的消息，这是一个示例响应，你发送的数据是：" + json.dumps(data_dict)
-                        response.data = json.dumps(response_data).encode('utf-8')
-                        response.error_code = ""
-                    else:
-                        # 如果是其他类型的消息
-                        response.data = f"Processed {data}".encode('utf-8')
-                        response.error_code = ""
-
-                    # 序列化响应并发送给客户端
-                    await websocket.send_bytes(response.SerializeToString())
-
-                    continue
-
-            except asyncio.TimeoutError:
-                logging.warning("心跳超时，关闭连接")
-                await websocket.close()
-                break
-
-            except RuntimeError as e:
-                logging.error(f"连接出现异常: {str(e)}")
-                break
+        await accept_timeout(client_key, websocket)
 
     except WebSocketDisconnect:
-        clients.pop(websocket, None)
-        logging.info("客户端断开连接")
+        clients.pop(client_key, None)
+        logging.info(f"客户端 {client_key} 断开连接")
+
+    except RuntimeError as e:
+        clients.pop(client_key, None)
+        logging.error(f"连接出现异常 ({client_key}): {str(e)}")
+
+    logging.info(f"当前在线客户端: {list(clients.keys())}")
+
+
+async def accept_timeout(client_key, websocket):
+    while True:
+        try:
+            message = await asyncio.wait_for(websocket.receive(), timeout=HEARTBEAT_TIMEOUT)
+
+            if "text" in message:
+                await handle_text(client_key, message, websocket)
+
+            elif "bytes" in message:
+                await handle_bytes(client_key, message, websocket)
+
+        except asyncio.TimeoutError:
+            logging.warning(f"心跳超时，关闭连接 ({client_key})")
+            try:
+                await websocket.close()
+            except RuntimeError as e:
+                logging.warning(f"WebSocket {client_key} 可能已经关闭: {e}")
+            except Exception as e:
+                logging.error(f"关闭 WebSocket 失败: {e}")
+            clients.pop(client_key, None)
+            break
+
+
+async def handle_bytes(client_key, message, websocket):
+    message_data = message["bytes"]
+    request = Request()
+    request.ParseFromString(message_data)
+    data_type = request.data_type
+    data = request.data
+    if data_type == "json":
+        data_dict = json.loads(data.decode("utf-8"))
+    else:
+        data_dict = data.decode("utf-8")
+    logging.info(f"Received data from {client_key}: {data_dict} (type: {data_type})")
+    response = Response(
+        id=request.id,
+        timestamp=int(time.time()),
+        data_type=data_type,
+    )
+    if data_type == "json":
+        response_data = "收到了你的消息，这是一个示例响应，你发送的数据是：" + json.dumps(data_dict)
+        response.data = json.dumps(response_data).encode('utf-8')
+        response.error_code = ""
+    else:
+        response.data = f"Processed {data}".encode('utf-8')
+        response.error_code = ""
+    await websocket.send_bytes(response.SerializeToString())
+
+
+async def handle_text(client_key, message, websocket):
+    message_data = message["text"]
+    if message_data == "ping":
+        await websocket.send_text("pong")
+        clients[client_key]["last_heartbeat"] = time.time()
+        logging.debug(f"收到心跳请求 ping，返回 pong ({client_key})")
+    else:
+        logging.info(f"收到文本消息：{message_data} ({client_key})")
