@@ -7,13 +7,42 @@ from fastapi.responses import JSONResponse
 from pup_core.http_routes import serial_router, status_router
 from pup_core.model.response_models import ErrorResponse
 from pup_core.ws_routes import notifications_router, message_router
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from fastapi.exceptions import RequestValidationError
 
 app = FastAPI()
 
 
+# 全局异常处理器: 捕获所有HTTP异常 (包括404等)
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    logging.error(f"HTTP Exception: {exc.detail}")
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=ErrorResponse(
+            code=exc.status_code,
+            message=exc.detail
+        ).dict()
+    )
+
+
+# 全局异常处理器: 捕获所有422请求验证错误
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    logging.error(f"Validation Error: {exc.errors()}")
+    return JSONResponse(
+        status_code=422,
+        content=ErrorResponse(
+            code=422,
+            message="Validation Error",
+            data=exc.errors()  # 返回具体的字段错误信息
+        ).dict()
+    )
+
+
 # 全局异常处理
 @app.exception_handler(Exception)
-async def general_exception_handler(request: Request, exc: Exception):
+async def global_exception_handler(request: Request, exc: Exception):
     """全局异常处理，兜底处理未捕获的错误"""
 
     # 获取请求的 URL、方法和客户端 IP

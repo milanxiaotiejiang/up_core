@@ -63,7 +63,7 @@ async def get_version(request: HttpRequest, serial_manager=Depends(get_serial_ma
 
 @router.post("/write")
 @handle_exceptions
-async def get_version(request: WriteRequest, serial_manager=Depends(get_serial_manager)):
+async def sync_write(request: WriteRequest, serial_manager=Depends(get_serial_manager)):
     raw_data_hex = request.raw_data
     try:
         raw_data = binascii.unhexlify(raw_data_hex.replace(" ", ""))
@@ -77,9 +77,9 @@ async def get_version(request: WriteRequest, serial_manager=Depends(get_serial_m
         raise HTTPException(status_code=400, detail="Invalid HEX data")
 
 
-@router.post("/write_wait")
+@router.post("/async_write")
 @handle_exceptions
-async def get_version(request: WriteRequest, serial_manager=Depends(get_serial_manager)):
+async def async_write(request: WriteRequest, serial_manager=Depends(get_serial_manager)):
     raw_data_hex = request.raw_data
     try:
         raw_data = binascii.unhexlify(raw_data_hex.replace(" ", ""))

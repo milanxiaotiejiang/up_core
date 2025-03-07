@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 
 import up_core as serial
@@ -9,6 +10,7 @@ import logging
 
 from pup_core.model.up_core import UpErrorCode
 from pup_core.model.up_exception import SerialException
+from pup_core.signals import error_signal
 
 
 def list_serial_ports():
@@ -145,6 +147,7 @@ class SerialManager:
                     time.sleep(0.1)  # 无数据时稍作等待，避免高 CPU 占用
         except Exception as e:
             logging.exception("读取串口数据时出错: %s", e)
+            asyncio.run(error_signal.send_async("serial_error", message=f"Error reading serial data: {str(e)}"))
             raise
 
     def start_receiving_data(self, serial_id: str):
