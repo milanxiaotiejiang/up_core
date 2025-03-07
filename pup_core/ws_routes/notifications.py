@@ -2,6 +2,8 @@ import time
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 import logging
+
+from pup_core.model.notification_type import NotificationType
 from pup_core.proto import Notification
 from blinker import signal  # 引入 blinker
 
@@ -15,10 +17,11 @@ clients = []  # 保存连接的客户端
 
 
 # 异步信号处理函数
-async def send_serial_error_to_clients(message: str):
+async def send_serial_error_to_clients(serial_id: str, message: str):
     if clients:
         notification = Notification()
-        notification.title = "串口错误"
+        notification.type = NotificationType.SerialError
+        notification.title = serial_id
         notification.message = message
 
         # 序列化消息为二进制
@@ -41,10 +44,9 @@ async def websocket_notifications(websocket: WebSocket):
     clients.append(websocket)
 
     # 定义异步信号监听器
-    async def serial_signal_handler(sender, message):
+    async def serial_signal_handler(sender, serial_id, message):
         """当接收到 blinker 信号时触发，发送消息给客户端"""
-        logging.info(f"Received signal: {message}")
-        await send_serial_error_to_clients(message)
+        await send_serial_error_to_clients(serial_id, message)
 
     # 注册信号监听器
     error_signal.connect(serial_signal_handler)

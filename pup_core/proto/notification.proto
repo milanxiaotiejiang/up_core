@@ -4,9 +4,10 @@ package notification;
 
 // Notification 消息结构
 message Notification {
-  string title = 1;        // 通知标题
-  string message = 2;      // 通知内容
-  string sender = 3;       // 发送者
-  string receiver = 4;     // 接收者
-  int64 timestamp = 5;     // 时间戳
+  int64 type = 1;            // 通知ID
+  string title = 2;        // 通知标题
+  string message = 3;      // 通知内容
+  string sender = 4;       // 发送者
+  string receiver = 5;     // 接收者
+  int64 timestamp = 6;     // 时间戳
 }
