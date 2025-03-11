@@ -187,6 +187,7 @@ bool Servo::performSerialData(const std::vector<uint8_t> &packet) {
     }
 
     uint8_t id = packet[2];
+    uint8_t length = packet[3];
     uint8_t error = packet[4];
     std::vector<uint8_t> payload(packet.begin() + 5, packet.end() - 1);
 
@@ -196,10 +197,46 @@ bool Servo::performSerialData(const std::vector<uint8_t> &packet) {
                         + " (" + errorInfo.description + ")");
     }
 
-    Logger::info("✅ 接收到数据包: " + bytesToHex(packet));
+    Logger::info("✅ 接收到数据包: " + bytesToHex(payload));
 
     // 这里可以回调处理接收到的数据，例如存储 payload 供其他线程访问
     return true;
+}
+
+std::pair<bool, std::pair<int, int>> Servo::performID(const std::vector<uint8_t> &packet) {
+
+    // 解析应答包
+    // 检查数据包长度是否足够
+    if (packet.size() < 6) {
+        Logger::debug("❌ 数据包长度不足，丢弃数据");
+        return std::make_pair(false, std::make_pair(0, 0));
+    }
+
+    // 计算校验和
+    uint8_t checksum = 0;
+    for (size_t i = 2; i < packet.size() - 1; i++) {
+        checksum += packet[i];
+    }
+    checksum = ~checksum;
+
+    // 校验失败，丢弃数据包
+    if (checksum != packet.back()) {
+        Logger::debug("❌ 校验失败，丢弃数据包");
+        return std::make_pair(false, std::make_pair(0, 0));
+    }
+
+    uint8_t id = packet[2];
+    uint8_t length = packet[3];
+    uint8_t error = packet[4];
+
+    servo::ServoErrorInfo errorInfo = servo::getServoErrorInfo(error);
+    if (errorInfo.error != servo::ServoError::NO_ERROR) {
+        Logger::warning("⚠️ 舵机 " + std::to_string(id) + " 返回错误: " + std::to_string(errorInfo.error)
+                        + " (" + errorInfo.description + ")");
+        return std::make_pair(true, std::make_pair(id, error));
+    }
+
+    return std::make_pair(true, std::make_pair(id, error));
 }
 
 void Servo::processSerialData() {

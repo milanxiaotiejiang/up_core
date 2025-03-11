@@ -8,8 +8,13 @@
 #include <vector>
 #include <stdint.h>
 #include "string"
+#include <functional>
 
 namespace servo {
+
+    const uint8_t HEAD_ADDRESS = 0x1E;
+
+    class ServoProtocol;
 
     enum class AlarmShutdownConfig : uint8_t {
         NONE = 0,       // 不启用卸载保护
@@ -86,8 +91,141 @@ namespace servo {
         virtual ~Base() = default;  // ✅ 统一析构函数
 
         uint8_t getID() const { return id_; }  // ✅ 统一获取 ID
-        // 发送 WRITE DATA 指令
+
+        std::vector<uint8_t> buildShortPacket(int write_length, std::vector<uint8_t> commandData);
+
         std::vector<uint8_t> buildCommandPacket(ORDER command, uint8_t address, const std::vector<uint8_t> &data);
+
+        /**
+         * PING（查询）     查询工作状态          0x01    0
+         *
+         * 读取 ID 号为 1 的 CDS55xx 的工作状态
+         *
+         * 指令帧:
+         *  0XFF
+         *  0XFF
+         *  0X01    ID
+         *  0X02    Length
+         *  0X01    Instruction
+         *  0XFB    Check Sum
+         * 返回的数据帧:
+         *  0XFF
+         *  0XFF
+         *  0X01    ID
+         *  0X02    Length
+         *  0X00    Error
+         *  0XFC    Check Sum
+         *
+         *  不管是广播 ID 还是 Return Level (Address 16)等于 0，只要发送 PINE 指令且校验和正确，都会返回舵机工作状态
+         */
+        std::vector<uint8_t> buildPingPacket();
+
+        /**
+         * READ DATA（读） 查询控制表里的字符       0x02    2
+         *
+         * 读取 ID 为 1 的 CDS55xx 的内部温度。在控制表里从地址 0X2B 处读取一个字节。
+         *
+         * 指令帧:
+         *  0XFF
+         *  0XFF
+         *  0X01    ID
+         *  0X04    Length
+         *  0X02    Instruction
+         *  0X2B    对应 EEPROM::TEMPERATURE
+         *  0X01    读取 1 个字节
+         *  0XCC    Check Sum
+         * 返回的数据帧:
+         *  0XFF
+         *  0XFF
+         *  0X01    ID
+         *  0X03    Length
+         *  0X00    Error
+         *  0X20
+         *  0XDB    Check Sum
+         *
+         *  读出的数据是 0x20，说明当前的温度约是 32℃（0x20）
+         */
+        std::vector<uint8_t> buildReadPacket(uint8_t address, uint8_t read_length);
+
+
+        /**
+         * WRITE DATA（写） 往控制表里写入字符      0x03    不小于2
+         *
+         * 把一个任意编号的 CDS55xx 的 ID 设置为 1。在控制表里保存 ID 号的地址为 3（控制表见后文），所以在地址 3 处写入 1 即可. 发送指令包的 ID 使用广播 ID (0xFE)。
+         *
+         * 指令帧:
+         *  0XFF
+         *  0XFF
+         *  0XFE    ID（广播）
+         *  0X04    Length
+         *  0X03    Instruction
+         *  0X03    对应 EEPROM::ID
+         *  0X01    修改数据
+         *  0XF6
+         *
+         *  因为采用广播 ID 发送指令，所以不会有数据返回
+         */
+        std::vector<uint8_t> buildWritePacket(uint8_t address, const std::vector<uint8_t> &data);
+
+        /**
+         * REG WRITE（异步写）   类似于WRITE DATA，但是控制字符写入后并不马上动作，直到ACTION指令到达  0x04    不小于2
+         */
+        std::vector<uint8_t> buildRegWritePacket(uint8_t address, const std::vector<uint8_t> &data);
+
+        /**
+         * ACTION（执行异步写） 触发REG WRITE写入的动作   0x05    0
+         */
+        std::vector<uint8_t> buildActionPacket();
+
+        /**
+         * RESET（复位） 把控制表复位为出厂值     0x06    0
+         *
+         * 复位 CDS55xx，ID 号为 0
+         *
+         * 指令帧:
+         *  0XFF
+         *  0XFF
+         *  0X00     ID
+         *  0X02     Length
+         *  0X06     Instruction
+         *  0XF7
+         * 返回的数据帧:
+         *  0XFF
+         *  0XFF
+         *  0X00     ID
+         *  0X02     Length
+         *  0X00     Error
+         *  0XFD
+         */
+        std::vector<uint8_t> buildResetPacket();
+
+        /**
+         * SYNC WRITE
+         *
+         * 用于同时控制多个 CDS55xx。
+         *
+         * 0XFF 0XFF
+         * 0XFE     ID（广播）
+         * 0X18     Length
+         * 0X83     Instruction
+         *
+         * 0X1E     写入数据的首地址，对应 RAM::GOAL_POSITION_L
+         * 0X04     写入的数据的长度(L)
+         * 0X00     第一个 CDS55xx 的 ID 号
+         * 0X10 0X00 0X50 0X01  写入的四个数据
+         * 0X01     第二个 CDS55xx 的 ID 号
+         * 0X20 0X02 0X60 0X03  写入的四个数据
+         * 0X02     第三个 CDS55xx 的 ID 号
+         * 0X30 0X00 0X70 0X01  写入的四个数据
+         * 0X03     第四个 CDS55xx 的 ID 号
+         * 0X20 0X02 0X80 0X03  写入的四个数据
+         *
+         * 0X12     Check Sum
+         */
+        std::vector<uint8_t>
+        buildSyncWritePacket(uint8_t address, int write_length, std::vector<ServoProtocol> &protocols,
+                             std::function<std::vector<uint8_t>(ServoProtocol &data, int position)> func);
+
 
     };
 
@@ -248,8 +386,14 @@ namespace servo {
         // 同步 控制舵机 直接移动到目标角度
         std::vector<uint8_t> buildMoveToPosition(float angle);
 
+        std::vector<uint8_t> buildMoveToWithSpeedRatio(float angle, float rpm);
+        /**
+         * 位置范围：0x0000 对应 0 度，0x03ff 对应 300 度
+         *      位置范围为 0 到 1023（0x0000 到 0x03ff），每个单位对应约 0.293 度。
+         * 速度范围：最大速度 1023（62RPM），最小速度 1。0 和 1023 都表示最大速度。
+         */
         // 目标角度和速度
-        std::vector<uint8_t> buildMoveToWithSpeed(float angle, float speed_ratio);
+        std::vector<uint8_t> buildMoveToWithSpeedRpm(float angle, float rpm);
 
         // 异步写 (REG_WRITE)，舵机 不立即运动，等待 ACTION 指令
         std::vector<uint8_t> buildAsyncMoveToPosition(float angle);
@@ -306,11 +450,17 @@ namespace servo {
     public:
         explicit Motor(uint8_t id);
 
+        /**
+         * 角度限制解除：将角度限制（0x06~0x09）设为 0，使舵机进入轮式模式
+         */
         // 设置舵机进入电机调速模式
         std::vector<uint8_t> buildEnterWheelMode();
 
+        /**
+         * 速度控制：速度大小由 0x20~0x21 控制，低 10 位（BIT0~BIT9）存储速度值，高 1 位（BIT10）表示方向：
+         */
         // 设置电机模式的转速
-        std::vector<uint8_t> buildSetWheelSpeed(float speed_ratio);
+        std::vector<uint8_t> buildSetMotorSpeed(float rpm);
 
         // 还原角度
         std::vector<uint8_t> buildRestoreAngleLimits();
@@ -370,6 +520,22 @@ namespace servo {
         }
 
         return errorInfo;
+    }
+
+// 从 speed_ratio 转换为 RPM
+    static float speedRatioToRPM(float speed_ratio) {
+        if (speed_ratio < -1.0f || speed_ratio > 1.0f) {
+            throw std::out_of_range("速度比例超出范围 (-1.0 - 1.0)");
+        }
+        return speed_ratio * 62.0f;
+    }
+
+// 从 RPM 转换为 speed_ratio
+    static float rpmToSpeedRatio(float rpm) {
+        if (rpm < -62.0f || rpm > 62.0f) {
+            throw std::out_of_range("RPM 超出范围 (-62.0 - 62.0)");
+        }
+        return rpm / 62.0f;
     }
 } // namespace servo
 

@@ -1,5 +1,10 @@
+import multiprocessing
+import threading
 import time
 import sys
+import asyncio
+
+import logging
 
 print(sys.path)
 
@@ -28,7 +33,11 @@ from up_core import Serial
 from up_core import Servo
 from up_core import ServoProtocol
 
-up.set_log_level(LogLevel.DEBUG)  # 设置日志级别为 DEBUG
+from up_core import ServoManager
+
+logging.basicConfig(level=logging.DEBUG)
+
+up.set_log_level(LogLevel.INFO)  # 设置日志级别为 DEBUG
 #
 result = up.add(3, 5)
 print(result)  # 输出 8

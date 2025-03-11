@@ -2,12 +2,27 @@ import argparse
 import time
 import threading
 import numpy as np
+import logging
+import sys
+import signal
 
 import up_core as serial
 from up_core import Servo
 from up_core import ServoProtocol
 
+from up_core import ServoManager
+
 VERSION = "1.0.0"
+
+logging.basicConfig(level=logging.INFO)
+
+
+# 退出信号处理函数，用于处理 Ctrl+C
+def signal_handler(sig, frame):
+    servo_manager = ServoManager.instance()
+    print("\n中断搜索...")
+    servo_manager.stopSearchServoID()
+    sys.exit(0)
 
 
 def list_serial_ports():
@@ -171,6 +186,30 @@ def continuous_mode(ser):
         print("串口已关闭")
 
 
+# 启动uio search功能
+def search(device, baudrates):
+    servo_manager = ServoManager.instance()
+
+    # 设置回调函数
+    def callback(baud, servo_id, error_code):
+        logging.info(f"波特率: {baud}, 舵机 ID: {servo_id}, 错误码: {error_code}")
+
+    # 设置回调函数
+    servo_manager.setCallback(callback)
+
+    # 启动搜索线程
+    servo_manager.startSearchServoID(device, baudrates)
+
+    logging.info(f"开始在设备 {device} 上搜索舵机，波特率: {', '.join(map(str, baudrates))}...")
+
+    try:
+        # 通过Ctrl+C停止搜索
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        signal_handler(None, None)
+
+
 def main():
     """主函数，解析命令行参数并根据参数执行相应功能。"""
     parser = argparse.ArgumentParser(description="UIO Serial Communication Tool")
@@ -207,11 +246,22 @@ def main():
     # 显示版本号
     parser.add_argument('-v', '--version', action='version', version=f'%(prog)s {VERSION}', help='显示版本信息')
 
+    # uio search 模式
+    parser.add_argument('--search', action='store_true', help='启动uio搜索模式')
+
+    # 波特率（支持多个波特率）
+    parser.add_argument('-bs', '--baudrates', type=str, default="9600",
+                        help='设置波特率（支持多个波特率，逗号分隔，默认: 9600）')
+
     # 解析参数
     args = parser.parse_args()
 
     if args.list:
         list_serial_ports()
+    elif args.search and args.device:
+        # 处理多个波特率，逗号分隔
+        baudrates = [int(baudrate) for baudrate in args.baudrates.split(',')]
+        search(args.device, baudrates)
     elif args.device:
         try:
             ser = open_serial(

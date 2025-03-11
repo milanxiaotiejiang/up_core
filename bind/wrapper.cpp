@@ -5,6 +5,7 @@
 #include "logger.h"
 #include "servo.h"
 #include "adc.h"
+#include "servo_manager.h"
 #include <pybind11/stl.h>
 #include <pybind11/functional.h>
 
@@ -197,6 +198,23 @@ PYBIND11_MODULE(up_core, m) {
     m.def("get_servo_error_info", &servo::getServoErrorInfo, "获取舵机错误信息",
           py::arg("error"));
 
+    // 绑定 Base 类
+    py::class_<servo::Base>(m, "Base")
+            .def(py::init<uint8_t>(), py::arg("id"))
+            .def("getID", &servo::Base::getID, "获取舵机 ID")
+            .def("buildShortPacket", &servo::Base::buildShortPacket, py::arg("write_length"), py::arg("commandData"))
+            .def("buildCommandPacket", &servo::Base::buildCommandPacket, py::arg("command"), py::arg("address"),
+                 py::arg("data"))
+            .def("buildPingPacket", &servo::Base::buildPingPacket)
+            .def("buildReadPacket", &servo::Base::buildReadPacket, py::arg("address"), py::arg("read_length"))
+            .def("buildWritePacket", &servo::Base::buildWritePacket, py::arg("address"), py::arg("data"))
+            .def("buildRegWritePacket", &servo::Base::buildRegWritePacket, py::arg("address"), py::arg("data"))
+            .def("buildActionPacket", &servo::Base::buildActionPacket)
+            .def("buildResetPacket", &servo::Base::buildResetPacket)
+            .def("buildSyncWritePacket", &servo::Base::buildSyncWritePacket, py::arg("address"),
+                 py::arg("write_length"), py::arg("protocols"), py::arg("func"));
+
+
     // servo::ServoEEPROM
     py::class_<servo::ServoEEPROM>(m, "ServoEEPROM")
             .def(py::init<uint8_t>(), py::arg("id"), "构造 ServoEEPROM 对象")
@@ -244,8 +262,10 @@ PYBIND11_MODULE(up_core, m) {
             .def("buildGetCcwComplianceSlope", &servo::ServoRAM::buildGetCcwComplianceSlope, "读取逆时针比例系数")
             .def("buildMoveToPosition", &servo::ServoRAM::buildMoveToPosition, py::arg("angle"),
                  "同步 控制舵机 直接移动到目标角度")
-            .def("buildMoveToWithSpeed", &servo::ServoRAM::buildMoveToWithSpeed, py::arg("angle"),
+            .def("buildMoveToWithSpeedRatio", &servo::ServoRAM::buildMoveToWithSpeedRatio, py::arg("angle"),
                  py::arg("speed_ratio"), "目标角度和速度")
+            .def("buildMoveToWithSpeedRpm", &servo::ServoRAM::buildMoveToWithSpeedRpm, py::arg("angle"),
+                 py::arg("rpm"), "目标角度和速度 rpm")
             .def("buildAsyncMoveToPosition", &servo::ServoRAM::buildAsyncMoveToPosition, py::arg("angle"),
                  "异步写 (REG_WRITE)，舵机 不立即运动，等待 ACTION 指令")
             .def("buildActionCommand", &servo::ServoRAM::buildActionCommand, "REG_WRITE + ACTION")
@@ -268,7 +288,7 @@ PYBIND11_MODULE(up_core, m) {
     py::class_<servo::Motor>(m, "Motor")
             .def(py::init<uint8_t>(), py::arg("id"), "构造 Motor 对象")
             .def("buildEnterWheelMode", &servo::Motor::buildEnterWheelMode, "设置舵机进入电机调速模式")
-            .def("buildSetWheelSpeed", &servo::Motor::buildSetWheelSpeed, py::arg("speed_ratio"), "设置电机模式的转速")
+            .def("buildSetMotorSpeed", &servo::Motor::buildSetMotorSpeed, py::arg("rpm"), "设置电机模式的转速")
             .def("buildRestoreAngleLimits", &servo::Motor::buildRestoreAngleLimits, "还原角度");
 
     py::class_<servo::ServoProtocol>(m, "ServoProtocol")
@@ -484,5 +504,19 @@ PYBIND11_MODULE(up_core, m) {
             .def("send_command", &Servo::sendCommand, py::arg("frame"), "Send command to the servo")
             .def("set_data_callback", &Servo::setDataCallback, "Set a data reception callback");
 
+    // 绑定 ServoManager 类
+    py::class_<ServoManager>(m, "ServoManager")
+            .def_static("instance", &ServoManager::instance, py::return_value_policy::reference, "获取单例实例")
+            .def("setCallback", &ServoManager::setCallback, py::arg("callback"), "设置回调函数")
+            .def("startSearchServoID", &ServoManager::startSearchServoID, py::arg("port"), py::arg("baudrates"),
+                 "启动舵机搜索")
+            .def("stopSearchServoID", &ServoManager::stopSearchServoID, "停止舵机搜索");
+
+
+    // 绑定 servo 命名空间中的全局函数
+    m.def("speedRatioToRPM", &servo::speedRatioToRPM, py::arg("speed_ratio"), "从速度比例转换为 RPM");
+    m.def("rpmToSpeedRatio", &servo::rpmToSpeedRatio, py::arg("rpm"), "从 RPM 转换为速度比例");
+
+    m.def("bytesToHex", &bytesToHex, py::arg("data"), "Convert bytes to hex string");
 
 }

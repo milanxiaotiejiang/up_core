@@ -7,6 +7,8 @@
 #include <numeric>
 #include "unordered_map"
 #include "logger.h"
+#include <cmath>
+
 
 namespace servo {
 
@@ -42,7 +44,23 @@ namespace servo {
         return static_cast<uint8_t>(~sum);
     }
 
-    // 发送 WRITE DATA 指令
+//    std::vector<uint8_t> Base::buildShortPacket(uint8_t address, const std::vector<uint8_t> &data) {
+//        std::vector<uint8_t> packet;
+//
+//        packet.push_back(id_); // ID
+//        packet.push_back(address);
+//        if (!data.empty()) {
+//            packet.insert(packet.end(), data.begin(), data.end());
+//        }
+//
+//        return packet;
+//    }
+
+    std::vector<uint8_t> Base::buildShortPacket(int write_length, std::vector<uint8_t> commandData) {
+        std::vector<uint8_t> payload(commandData.end() - 1 - write_length, commandData.end() - 1);
+        return payload;
+    }
+
     std::vector<uint8_t> Base::buildCommandPacket(ORDER command, uint8_t address, const std::vector<uint8_t> &data) {
 
         std::vector<uint8_t> packet;
@@ -52,7 +70,7 @@ namespace servo {
 
         // 数据长度 = 参数数量 + 2 + 指令(1)
         uint8_t length = static_cast<uint8_t>(data.size() + 2);
-        if (command != ORDER::ACTION) {  // ACTION 指令不需要地址
+        if (!(command == ORDER::ACTION || command == ORDER::PING)) {  // ACTION、PING 指令不需要地址
             length += 1;
         }
         packet.push_back(length);
@@ -76,6 +94,56 @@ namespace servo {
 //        Logger::debug("发送指令包: " + bytesToHex(packet));
 
         return packet;
+    }
+
+    std::vector<uint8_t> Base::buildPingPacket() {
+        return buildCommandPacket(ORDER::PING, 0x00, {});
+    }
+
+    std::vector<uint8_t> Base::buildReadPacket(uint8_t address, uint8_t read_length) {
+        return buildCommandPacket(ORDER::READ_DATA, address, {read_length});
+    }
+
+    std::vector<uint8_t> Base::buildWritePacket(uint8_t address, const std::vector<uint8_t> &data) {
+        return buildCommandPacket(ORDER::WRITE_DATA, address, data);
+    }
+
+    std::vector<uint8_t> Base::buildRegWritePacket(uint8_t address, const std::vector<uint8_t> &data) {
+        return buildCommandPacket(ORDER::REG_WRITE, address, data);
+    }
+
+    std::vector<uint8_t> Base::buildActionPacket() {
+        return buildCommandPacket(ORDER::ACTION, 0x00, {});
+    }
+
+    std::vector<uint8_t> Base::buildResetPacket() {
+        return buildCommandPacket(ORDER::RESET, 0x00, {});
+    }
+
+    std::vector<uint8_t>
+    Base::buildSyncWritePacket(uint8_t address, int write_length, std::vector<ServoProtocol> &protocols,
+                               std::function<std::vector<uint8_t>(ServoProtocol &data, int position)> func) {
+
+        std::vector<uint8_t> packet;
+
+        packet.push_back(write_length);
+
+        for (size_t i = 0; i < protocols.size(); ++i) {
+            // 调用 func 并获取结果
+            std::vector<uint8_t> result = func(protocols[i], i);
+
+            auto payload = buildShortPacket(write_length, result);
+
+            // 判断 result 的长度是否与 write_Length 匹配
+            if (payload.size() != write_length) {
+                throw std::runtime_error("Error: Length of result does not match write_Length.");
+            }
+
+            // 确保 result 是 std::vector<uint8_t> 类型
+            packet.insert(packet.end(), payload.begin(), payload.end());
+        }
+
+        return buildCommandPacket(ORDER::SYNC_WRITE, address, packet);
     }
 
     ServoEEPROM::ServoEEPROM(uint8_t id) : Base(id) {}
@@ -305,7 +373,7 @@ namespace servo {
     }
 
     // 目标角度和速度
-    std::vector<uint8_t> ServoRAM::buildMoveToWithSpeed(float angle, float speed_ratio) {
+    std::vector<uint8_t> ServoRAM::buildMoveToWithSpeedRatio(float angle, float speed_ratio) {
         if (angle < 0.0f || angle > 300.0f) {
             throw std::out_of_range("目标角度超出范围 (0° - 300°)");
         }
@@ -327,6 +395,12 @@ namespace servo {
         });
 
     }
+
+    // 目标角度和速度
+    std::vector<uint8_t> ServoRAM::buildMoveToWithSpeedRpm(float angle, float rpm) {
+        return buildMoveToWithSpeedRatio(angle, rpmToSpeedRatio(rpm));
+    }
+
 
     // 异步写 (REG_WRITE)，舵机 不立即运动，等待 ACTION 指令
     std::vector<uint8_t> ServoRAM::buildAsyncMoveToPosition(float angle) {
@@ -433,24 +507,25 @@ namespace servo {
     }
 
     // 设置电机模式的转速
-    std::vector<uint8_t> Motor::buildSetWheelSpeed(float speed_ratio) {
-        if (speed_ratio < -1.0f || speed_ratio > 1.0f) {
-            throw std::out_of_range("速度比例超出范围 (-1.0 - 1.0)");
+    std::vector<uint8_t> Motor::buildSetMotorSpeed(float rpm) {
+        if (rpm < -62.0f || rpm > 62.0f) {
+            throw std::out_of_range("速度超出范围 (-62.0 - 62.0 RPM)");
         }
 
-        // 计算速度值 (0x0000 - 0x03FF)
-        uint16_t speed = static_cast<uint16_t>(std::abs(speed_ratio) * 1023);
+        // **计算速度值 (0~1023)**
+        uint16_t speed = static_cast<uint16_t>(std::round(std::abs(rpm) * 1023.0f / 62.0f));
 
-        // 设置方向位 BIT10
-        if (speed_ratio < 0) {
-            speed &= ~(1 << 10); // 方向位 0 = 逆时针
+        // **设置方向位 BIT10**
+        if (rpm >= 0) {
+            speed |= 0x0400;  // 顺时针 (BIT10 = 1)
         } else {
-            speed |= (1 << 10); // 方向位 1 = 顺时针
+            speed &= 0x03FF;  // 逆时针 (BIT10 = 0)
         }
 
+        // **调用 `buildCommandPacket` 生成命令**
         return buildCommandPacket(ORDER::WRITE_DATA, static_cast<uint8_t>(RAM::MOVING_SPEED_L), {
-                static_cast<uint8_t>(speed & 0xFF),  // 速度低字节
-                static_cast<uint8_t>((speed >> 8) & 0xFF)  // 速度高字节
+                static_cast<uint8_t>(speed & 0xFF),         // 速度低字节
+                static_cast<uint8_t>((speed >> 8) & 0xFF)   // 速度高字节 (包含方向位)
         });
     }
 

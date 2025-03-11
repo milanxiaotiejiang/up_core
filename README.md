@@ -224,6 +224,12 @@ uio /dev/ttyUSB0 -b 115200 -p even -r
 uio COM3 -b 38400 -p odd -d 7 -s 1.5 -f hardware -t 2.0 -r
 ```
 
+#### 搜索舵机 ID
+
+```shell
+uio --search /dev/ttyUSB0 -bs 9600,19200,115200
+```
+
 ### 错误处理
 
 - 如果指定的串口设备不存在或无法访问，程序会显示错误信息并退出。

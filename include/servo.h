@@ -77,6 +77,9 @@ public:
     /** @brief 解析串口数据 */
     bool performSerialData(const std::vector<uint8_t> &packet);
 
+    /** @brief 解析串口数据 */
+    std::pair<bool, std::pair<int, int>> performID(const std::vector<uint8_t> &packet);
+
     // 注册回调函数类型
     using DataCallback = std::function<void(const std::vector<uint8_t> &)>;
 

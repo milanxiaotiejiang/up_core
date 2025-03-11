@@ -66,6 +66,8 @@ set(up_core_SRCS
         include/adc.h
         src/logger.cpp
         include/logger.h
+        include/servo_manager.h
+        src/servo_manager.cpp
 )
 
 if (APPLE)

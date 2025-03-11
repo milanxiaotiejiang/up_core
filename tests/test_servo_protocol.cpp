@@ -3,6 +3,7 @@
 //
 #include "add.h"
 #include "servo.h"
+#include "logger.h"
 #include <gtest/gtest.h>
 
 TEST(SystemTest, Architecture) {
@@ -170,8 +171,14 @@ TEST(ServoRAMTest, BuildCommands) {
     std::vector<uint8_t> expected_cmd2 = {0xFF, 0xFF, 0x00, 0x04, 0x03, 0x19, 0x00, 0xDF};
     EXPECT_EQ(cmd2, expected_cmd2);
 
+
     // 让 0 号舵机以 **中速 (50%)** 运行到 **150°**
-    std::vector<uint8_t> cmd3 = servo.buildMoveToWithSpeed(150.0f, 0.5f);
+    std::vector<uint8_t> cmd33 = servo.buildMoveToWithSpeedRatio(150.0f, 0.5f);
+    std::vector<uint8_t> expected_cmd33 = {0xFF, 0xFF, 0x00, 0x07, 0x03, 0x1E, 0x00, 0x02, 0x00, 0x02, 0xD3};
+    EXPECT_EQ(cmd33, expected_cmd33);
+
+    // 让 0 号舵机以 **中速 (50%)** 运行到 **150°**
+    std::vector<uint8_t> cmd3 = servo.buildMoveToWithSpeedRpm(150.0f, servo::speedRatioToRPM(0.5f));
     std::vector<uint8_t> expected_cmd3 = {0xFF, 0xFF, 0x00, 0x07, 0x03, 0x1E, 0x00, 0x02, 0x00, 0x02, 0xD3};
     EXPECT_EQ(cmd3, expected_cmd3);
 
@@ -254,34 +261,77 @@ TEST(ServoRAMTest, GetServoStatus) {
 TEST(ServoRAMTest, WheelMode) {
     servo::Motor motor(0x00);
 
-    // **进入电机调速模式**
-    std::vector<uint8_t> cmd = motor.buildEnterWheelMode();
-    std::vector<uint8_t> expected_cmd = {0xFF, 0xFF, 0x00, 0x07, 0x03, 0x06, 0x00, 0x00, 0x00, 0x00, 0xEF};
+    {
+        // **31 RPM 顺时针**
+        std::vector<uint8_t> cmd = motor.buildSetMotorSpeed(31.0f);
+        std::vector<uint8_t> expected_cmd = {0xFF, 0xFF, 0x00, 0x05, 0x03, 0x20, 0x00, 0x06, 0xD1};
+        EXPECT_EQ(cmd, expected_cmd);
+    }
+
+    {
+        // **31 RPM 逆时针**
+        std::vector<uint8_t> cmd = motor.buildSetMotorSpeed(-31.0f);
+        std::vector<uint8_t> expected_cmd = {0xFF, 0xFF, 0x00, 0x05, 0x03, 0x20, 0x00, 0x02, 0xd5};
+        EXPECT_EQ(cmd, expected_cmd);
+    }
+
+    {
+        // **速度超出范围**
+        EXPECT_THROW(motor.buildSetMotorSpeed(70.0f), std::out_of_range);
+        EXPECT_THROW(motor.buildSetMotorSpeed(-70.0f), std::out_of_range);
+    }
+
+    {
+        // **停止 (速度 0)**
+        std::vector<uint8_t> cmd = motor.buildSetMotorSpeed(0.0f);
+        std::vector<uint8_t> expected_cmd = {0xFF, 0xFF, 0x00, 0x05, 0x03, 0x20, 0x00, 0x04, 0xD3};
+        EXPECT_EQ(cmd, expected_cmd);
+    }
+}
+
+TEST(ServoRAMTest, PacketMode) {
+
+    servo::ServoProtocol ss(0XFE);
+    servo::ServoProtocol servo0(0x00);
+    servo::ServoProtocol servo1(0x01);
+    servo::ServoProtocol servo2(0x02);
+    servo::ServoProtocol servo3(0x03);
+
+    std::vector<uint8_t> cmd = servo1.buildPingPacket();
+    std::vector<uint8_t> expected_cmd = {0xFF, 0xFF, 0X01, 0X02, 0X01, 0XFB};
     EXPECT_EQ(cmd, expected_cmd);
 
-    // 测试顺时针 50% 速度
-    std::vector<uint8_t> cmd1 = motor.buildSetWheelSpeed(0.5f);
-    std::vector<uint8_t> expected_cmd1 = {0xFF, 0xFF, 0x00, 0x05, 0x03, 0x20, 0xFF, 0x01, 0xD3};
+    std::vector<uint8_t> cmd1 = servo1.buildReadPacket(static_cast<uint8_t>(servo::RAM::TEMPERATURE), 0x01);
+    std::vector<uint8_t> expected_cmd1 = {0XFF, 0XFF, 0X01, 0X04, 0X02, 0X2B, 0X01, 0XCC};
     EXPECT_EQ(cmd1, expected_cmd1);
 
-    // 测试逆时针 50% 速度
-    std::vector<uint8_t> cmd2 = motor.buildSetWheelSpeed(-0.5f);
-    std::vector<uint8_t> expected_cmd2 = {0xFF, 0xFF, 0x00, 0x05, 0x03, 0x20, 0xFF, 0x01, 0xD7};
+    std::vector<uint8_t> cmd2 = ss.buildWritePacket(static_cast<uint8_t>(servo::EEPROM::ID), {0x01});
+    std::vector<uint8_t> expected_cmd2 = {0xFF, 0xFF, 0XFE, 0X04, 0X03, 0X03, 0X01, 0XF6};
     EXPECT_EQ(cmd2, expected_cmd2);
 
-    // 测试最大顺时针速度
-    std::vector<uint8_t> cmd3 = motor.buildSetWheelSpeed(1.0f);
-    std::vector<uint8_t> expected_cmd3 = {0xFF, 0xFF, 0x00, 0x05, 0x03, 0x20, 0xFF, 0x03, 0xD1};
+    std::vector<uint8_t> cmd3 = servo1.buildActionPacket();
+    std::vector<uint8_t> expected_cmd3 = servo1.ram.buildActionCommand();
     EXPECT_EQ(cmd3, expected_cmd3);
 
-    // 测试最大逆时针速度
-    std::vector<uint8_t> cmd4 = motor.buildSetWheelSpeed(-1.0f);
-    std::vector<uint8_t> expected_cmd4 = {0xFF, 0xFF, 0x00, 0x05, 0x03, 0x20, 0xFF, 0x03, 0xD5};
+    std::vector<servo::ServoProtocol> protocols{servo0, servo1, servo2, servo3};
+
+    auto func = [](servo::ServoProtocol &data, int position) -> std::vector<uint8_t> {
+        if (position == 0) {
+            return data.ram.buildMoveToWithSpeedRpm(4.69, 20.37);
+        } else if (position == 1) {
+            return data.ram.buildMoveToWithSpeedRpm(159.53, 52.37);
+        } else if (position == 2) {
+            return data.ram.buildMoveToWithSpeedRpm(14.07, 22.33);
+        } else if (position == 3) {
+            return data.ram.buildMoveToWithSpeedRpm(159.53, 54.28);
+        }
+        return std::vector<uint8_t>(4, static_cast<uint8_t>(position));
+    };
+
+    std::vector<uint8_t> cmd4 = ss.buildSyncWritePacket(static_cast<uint8_t>(servo::RAM::GOAL_POSITION_L), 0X04,
+                                                        protocols, func);
+    std::vector<uint8_t> expected_cmd4 = {0XFF, 0XFF, 0XFE, 0X18, 0X83, 0X1E, 0X04, 0X00, 0X10, 0X00, 0X50, 0X01, 0X01,
+                                          0X20, 0X02, 0X60, 0X03, 0X02, 0X30, 0X00, 0X70, 0X01, 0X03, 0X20, 0X02, 0X80,
+                                          0X03, 0X12};
     EXPECT_EQ(cmd4, expected_cmd4);
-
-    // 还原顺时针 & 逆时针角度限制
-    std::vector<uint8_t> cmd5 = motor.buildRestoreAngleLimits();
-    std::vector<uint8_t> expected_cmd5 = {0xFF, 0xFF, 0x00, 0x07, 0x03, 0x06, 0x00, 0x00, 0xFF, 0x03, 0xED};
-
-    EXPECT_EQ(cmd5, expected_cmd5);
 }
