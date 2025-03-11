@@ -38,7 +38,9 @@ private:
 
     std::mutex mtx;
     std::condition_variable cv;
-    std::atomic<bool> stop_thread{false};
+    std::atomic<bool> stop_predicate{true};
+
+    std::atomic<bool> isSearching{false};
 
     std::string searchPort;
     std::deque<int> dequeBauds;
@@ -51,6 +53,10 @@ private:
     void startSearchThread();
 
 public:
+
+    bool searching() {
+        return isSearching.load();
+    }
 
     void setCallback(std::function<void(int, int, int)> callback) {
         this->callback = std::move(callback);

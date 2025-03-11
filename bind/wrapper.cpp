@@ -507,6 +507,7 @@ PYBIND11_MODULE(up_core, m) {
     // 绑定 ServoManager 类
     py::class_<ServoManager>(m, "ServoManager")
             .def_static("instance", &ServoManager::instance, py::return_value_policy::reference, "获取单例实例")
+            .def("searching", &ServoManager::searching, "是否正在搜索舵机")
             .def("setCallback", &ServoManager::setCallback, py::arg("callback"), "设置回调函数")
             .def("startSearchServoID", &ServoManager::startSearchServoID, py::arg("port"), py::arg("baudrates"),
                  "启动舵机搜索")

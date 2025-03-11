@@ -66,7 +66,7 @@ setup(
     description="A core library for up_core project",  # 简短描述
     long_description=long_description,
     long_description_content_type="text/markdown",
-    py_modules=['up', 'uio'],  # 纯 Python 模块
+    py_modules=['up', 'uio', 'uio_s'],  # 纯 Python 模块
     packages=find_packages(),
     install_requires=[
         'numpy',  # 依赖的第三方库
@@ -75,6 +75,7 @@ setup(
         'console_scripts': [
             'up = up:main',  # 运行 `up` 命令时，会调用 `up.py` 中的 `main()` 函数
             'uio = uio:main',
+            'uio_s = uio_s:main',
             'pup_core = pup_core.__main__:cli'  # 让 `pup_core` 成为可执行命令
         ],
     },

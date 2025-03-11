@@ -7,6 +7,8 @@ import time
 import asyncio
 import logging
 
+logger = logging.getLogger("message")
+
 websocket_router = APIRouter()
 
 # 存储客户端及其心跳包最后接收时间

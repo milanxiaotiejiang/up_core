@@ -9,12 +9,13 @@
 #include "thread"
 
 void ServoManager::startSearchServoID(const std::string &port, const std::vector<int> &baudrates) {
-    if (stop_thread.load()) {
+    if (isSearching.load()) {
         Logger::info("正在搜索中...");
         return;
     }
 
-    stop_thread.store(false);   // 重置 stop_thread 为 false，允许重新启动搜索
+    isSearching.store(true);
+    stop_predicate.store(false);   // 重置 stop_thread 为 false，允许重新启动搜索
 
     this->searchPort = port;
 
@@ -34,15 +35,17 @@ void ServoManager::startSearchThread() {
             std::unique_lock<std::mutex> lock(mtx);
 
             cv.wait_for(lock, std::chrono::milliseconds(500), [this] {
-                return stop_thread.load();
+                return stop_predicate.load();
             });
 
-            if (stop_thread) {
+            if (stop_predicate) {
+                isSearching.store(false);
                 Logger::info("搜索线程已停止");
                 break;  // 安全停止线程
             }
 
             if (dequeBauds.empty()) {
+                isSearching.store(false);
                 Logger::info("搜索完成");
                 break;
             }
@@ -108,7 +111,7 @@ void ServoManager::startSearchThread() {
 void ServoManager::stopSearchServoID() {
     Logger::info("手动停止搜索...");
 
-    stop_thread.store(true);
+    stop_predicate.store(true);
     cv.notify_all();
 
     if (searchThread.joinable()) {

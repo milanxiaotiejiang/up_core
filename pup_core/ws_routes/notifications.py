@@ -5,11 +5,10 @@ import logging
 
 from pup_core.model.notification_type import NotificationType
 from pup_core.proto import Notification
-from blinker import signal  # 引入 blinker
 
 from pup_core.signals import error_signal
 
-logger = logging.getLogger("uvicorn")
+logger = logging.getLogger("notifications")
 
 # WebSocket 路由
 websocket_router = APIRouter()
@@ -62,16 +61,6 @@ async def websocket_notifications(websocket: WebSocket):
 
             # 处理接收到的消息
             logger.info(f"Received notification: {notification}")
-
-            # # 响应客户端
-            # response = Notification()
-            # response.title = "Notification"
-            # response.message = f"Notification received: {notification.message}"
-            # response.sender = "python"
-            # response.receiver = "javascript"
-            #
-            # # 序列化消息并发送回客户端
-            # await websocket.send_bytes(response.SerializeToString())
 
     except WebSocketDisconnect:
         logger.info(f"WebSocket connection closed from {websocket.client}")

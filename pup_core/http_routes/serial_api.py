@@ -1,23 +1,21 @@
 import binascii
 import logging
-from urllib.request import Request
+
+from fastapi import APIRouter, Depends, HTTPException
 
 import up_core as serial
-from fastapi import APIRouter, Depends, HTTPException
-from ..dependencies import get_serial_manager
-from up_core import Servo
 from up_core import ServoProtocol
-from pup_core.proto import Response
-from pup_core.model import request_models
-import time
+from up_core import ServoManager
 
+from ..dependencies import get_serial_manager
 from ..exceptions import handle_exceptions
-from ..model.request_models import HttpRequest, SerialRequest, OpenSerialRequest, WriteRequest
-from ..model.response_models import BaseResponse
+from ..model.request_models import HttpRequest, SerialRequest, OpenSerialRequest, WriteRequest, SearchIdRequest
 from ..model.response_models import SuccessResponse
 from ..model.response_models import ErrorResponse
 from ..servo_parser import perform_serial_data, perform_version
 from ..servo_parser import ServoError
+
+logger = logging.getLogger("serial_api")
 
 router = APIRouter()
 
@@ -97,6 +95,18 @@ async def async_write(request: WriteRequest, serial_manager=Depends(get_serial_m
         return SuccessResponse(status=True, data=response_data_with_spaces)
     except (binascii.Error, KeyError):
         raise HTTPException(status_code=400, detail="Invalid HEX data")
+
+
+@router.post("/start_search")
+@handle_exceptions
+async def async_write(request: SearchIdRequest):
+    pass
+
+
+@router.post("/stop_search")
+@handle_exceptions
+async def async_write(request: WriteRequest):
+    pass
 
 
 def list_serial_ports():
