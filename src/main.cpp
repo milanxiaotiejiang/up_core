@@ -13,31 +13,22 @@
 
 int main() {
 
-    Logger::setLogLevel(Logger::INFO);
+    Logger::setLogLevel(Logger::DEBUG);
     Logger::info(ServoManager::instance().searching() ? "正在搜索中..." : "搜索已停止");
 
     std::thread stopThread([]() {
-        Logger::info(ServoManager::instance().searching() ? "正在搜索中..." : "搜索已停止");
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        Logger::info(ServoManager::instance().searching() ? "正在搜索中..." : "搜索已停止");
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        Logger::info(ServoManager::instance().searching() ? "正在搜索中..." : "搜索已停止");
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        ServoManager::instance().stopSearchServoID();
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        Logger::info(ServoManager::instance().searching() ? "正在搜索中..." : "搜索已停止");
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        Logger::info(ServoManager::instance().searching() ? "正在搜索中..." : "搜索已停止");
+//        std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+//        ServoManager::instance().stopSearchServoID();
     });
     stopThread.detach();
 
     ServoManager::instance().setCallback([](int baud, int id, int error) {
-        Logger::error("      ID: " + std::to_string(id) + ", 错误码: " + std::to_string(error));
+        Logger::info("----------------      ID: " + std::to_string(id) + ", 错误码: " + std::to_string(error));
     });
     ServoManager::instance().startSearchServoID("/dev/ttyUSB0", {1000000});
 
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+    std::this_thread::sleep_for(std::chrono::milliseconds(30000));
 
     return 0;
 

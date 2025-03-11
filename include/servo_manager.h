@@ -50,12 +50,23 @@ private:
 
     std::function<void(int, int, int)> callback;
 
+    long searchTimeout{1000};
+    bool isVerify{false};
+
     void startSearchThread();
 
 public:
 
     bool searching() {
         return isSearching.load();
+    }
+
+    void setSearchTimeout(long timeout) {
+        this->searchTimeout = timeout;
+    }
+
+    void setVerify(bool verify) {
+        this->isVerify = verify;
     }
 
     void setCallback(std::function<void(int, int, int)> callback) {

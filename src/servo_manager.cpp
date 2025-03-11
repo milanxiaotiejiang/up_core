@@ -34,7 +34,7 @@ void ServoManager::startSearchThread() {
         while (true) {
             std::unique_lock<std::mutex> lock(mtx);
 
-            cv.wait_for(lock, std::chrono::milliseconds(500), [this] {
+            cv.wait_for(lock, std::chrono::milliseconds(searchTimeout), [this] {
                 return stop_predicate.load();
             });
 
@@ -63,17 +63,20 @@ void ServoManager::startSearchThread() {
 
                 // 设置舵机数据回调
                 servo->setDataCallback([this, baud, &servo](const std::vector<uint8_t> &data) {
+                    if (isVerify) {
+                        Logger::info("      校验 ID: " + std::to_string(searchID.load()));
+                        auto performID = servo->performID(data);
+                        if (performID.first) {
+                            int id = this->searchID.load();
+                            int error = performID.second.second;
 
-                    auto performID = servo->performID(data);
-                    if (performID.first) {
-                        int id = this->searchID.load();
-                        int error = performID.second.second;
 
-                        if (callback)
-                            callback(baud, id, error);
-                    } else {
-                        Logger::error("      ID: " + std::to_string(performID.second.first) + ", 错误码: " +
-                                      std::to_string(performID.second.second));
+                            if (callback)
+                                callback(baud, id, error);
+                        } else {
+                            Logger::error("      ID: " + std::to_string(performID.second.first) + ", 错误码: " +
+                                          std::to_string(performID.second.second));
+                        }
                     }
                 });
 
@@ -92,6 +95,11 @@ void ServoManager::startSearchThread() {
             bool success = servo->sendCommand(data);
             if (success) {
                 Logger::info("      呼叫 ID: " + std::to_string(currentId) + " 成功");
+                if (!isVerify) {
+                    Logger::info("      无校验 ID: " + std::to_string(currentId));
+                    if (callback)
+                        callback(baud, currentId, 0);
+                }
             } else {
                 Logger::info("      呼叫 ID: " + std::to_string(currentId) + " 失败");
             }

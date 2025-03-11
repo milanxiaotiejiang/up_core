@@ -4,3 +4,5 @@ websockets==10.3
 click==8.1.8
 uvicorn==0.33.0
 httpx==0.23.0
+pyzmq==26.2.1
+blinker==1.8.2

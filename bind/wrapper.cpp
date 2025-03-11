@@ -508,6 +508,8 @@ PYBIND11_MODULE(up_core, m) {
     py::class_<ServoManager>(m, "ServoManager")
             .def_static("instance", &ServoManager::instance, py::return_value_policy::reference, "获取单例实例")
             .def("searching", &ServoManager::searching, "是否正在搜索舵机")
+            .def("setSearchTimeout", &ServoManager::setSearchTimeout, py::arg("timeout"), "设置搜索超时时间")
+            .def("setVerify", &ServoManager::setVerify, py::arg("verify"), "设置校验标志")
             .def("setCallback", &ServoManager::setCallback, py::arg("callback"), "设置回调函数")
             .def("startSearchServoID", &ServoManager::startSearchServoID, py::arg("port"), py::arg("baudrates"),
                  "启动舵机搜索")

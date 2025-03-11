@@ -264,7 +264,7 @@ uio_s --search <device> -bs <baudrates>
 1. **在指定设备上启动搜索**:
 
    ```bash
-   uio_s --search /dev/ttyUSB0 -bs 9600,19200,115200
+   uio_s --search /dev/ttyUSB0 -bs 9600,19200,115200 --timeout 2000 --verify
    ```
 
    启动后，该命令会开始在设备 `/dev/ttyUSB0` 上搜索舵机，使用波特率 `9600`, `19200`, 和 `115200`。
