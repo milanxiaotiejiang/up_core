@@ -18,6 +18,16 @@ clients = {}
 HEARTBEAT_TIMEOUT = 60
 
 
+async def notify_clients(response: Response):
+    # 逐一发送给每个客户端
+    for client_key, client in clients.items():
+        try:
+            await client["websocket"].send_bytes(response.SerializeToString())
+        except Exception as e:
+            logger.error(f"Failed to send message to {client_key}: {e}")
+            clients.pop(client_key, None)
+
+
 @websocket_router.websocket("")
 async def websocket_message(websocket: WebSocket):
     await websocket.accept()

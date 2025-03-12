@@ -4,6 +4,8 @@ from up_core import LogLevel
 import up_core as up
 import logging
 
+from pup_core.process.zero_mq_search import start_search
+
 # 定义 click 的 log-level 和 LogLevel 枚举的映射
 LOG_LEVEL_MAP = {
     'debug': LogLevel.DEBUG,
@@ -28,6 +30,8 @@ def cli(host, port, reload, log_level):
 
     # 将 click 的 log-level 转换为 up_core 中的 LogLevel
     up.set_log_level(LOG_LEVEL_MAP[log_level])
+
+    start_search()
 
     # 启动服务器
     run_server(host=host, port=port, reload=reload, log_level=log_level)
