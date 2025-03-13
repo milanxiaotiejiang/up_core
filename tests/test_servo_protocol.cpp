@@ -173,11 +173,6 @@ TEST(ServoRAMTest, BuildCommands) {
 
 
     // 让 0 号舵机以 **中速 (50%)** 运行到 **150°**
-    std::vector<uint8_t> cmd33 = servo.buildMoveToWithSpeedRatio(150.0f, 0.5f);
-    std::vector<uint8_t> expected_cmd33 = {0xFF, 0xFF, 0x00, 0x07, 0x03, 0x1E, 0x00, 0x02, 0x00, 0x02, 0xD3};
-    EXPECT_EQ(cmd33, expected_cmd33);
-
-    // 让 0 号舵机以 **中速 (50%)** 运行到 **150°**
     std::vector<uint8_t> cmd3 = servo.buildMoveToWithSpeedRpm(150.0f, servo::speedRatioToRPM(0.5f));
     std::vector<uint8_t> expected_cmd3 = {0xFF, 0xFF, 0x00, 0x07, 0x03, 0x1E, 0x00, 0x02, 0x00, 0x02, 0xD3};
     EXPECT_EQ(cmd3, expected_cmd3);

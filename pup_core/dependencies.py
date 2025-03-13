@@ -2,7 +2,10 @@
 
 import pup_core.serial_manager as sm
 import logging
-from up_core import ServoProtocol
+from up_core import ServoProtocol, ServoError
+
+from pup_core.servo_parser import perform_serial_data
+from pup_core.utils.resolve import identify_mode
 
 # 创建 serial_manager 实例
 serial_manager = sm.SerialManager()
@@ -23,5 +26,14 @@ def get_serial_manager():
 #
 # # 打印格式化后的十六进制字符串
 # logging.info(f"\n收到数据: {formatted_hex_string}")
+#
+# data = servoProtocol.eeprom.buildGetCwAngleLimit()
+# byte_buffer = serial_manager.write_wait(serial_id, data)
+#
+# error_code, payload = perform_serial_data(byte_buffer)
+#
+# if error_code == ServoError.NO_ERROR:
+#     mode = identify_mode(payload)
+#     print(mode)
 #
 # serial_manager.close(serial_id)

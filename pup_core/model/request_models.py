@@ -1,6 +1,8 @@
-from pydantic import BaseModel, conint
-from typing import Optional
 from typing import List
+from typing import Optional
+
+from pydantic import BaseModel, confloat
+from pydantic import conint
 
 
 class OpenSerialRequest(BaseModel):
@@ -22,11 +24,18 @@ class SerialRequest(BaseModel):
     serial_id: str
 
 
-# 定义请求体的数据结构
 class HttpRequest(SerialRequest):
     protocol_id: conint(ge=0, le=255)
 
 
-# 定义请求体的数据结构
 class WriteRequest(SerialRequest):
     raw_data: str
+
+
+class AngleRequest(HttpRequest):
+    angle: Optional[confloat(ge=0, le=300)] = 0  # 限制 angle 在 0 到 300 之间
+    rpm: Optional[confloat(ge=1, le=32)] = 0  # 限制 rpm 在 1 到 32 之间
+
+
+class MotorSpeedRequest(HttpRequest):
+    rpm: Optional[confloat(ge=-62, le=62)] = 0  # 限制 rpm 在 1 到 32 之间

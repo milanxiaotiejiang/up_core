@@ -386,7 +386,6 @@ namespace servo {
         // 同步 控制舵机 直接移动到目标角度
         std::vector<uint8_t> buildMoveToPosition(float angle);
 
-        std::vector<uint8_t> buildMoveToWithSpeedRatio(float angle, float rpm);
         /**
          * 位置范围：0x0000 对应 0 度，0x03ff 对应 300 度
          *      位置范围为 0 到 1023（0x0000 到 0x03ff），每个单位对应约 0.293 度。
@@ -454,7 +453,10 @@ namespace servo {
          * 角度限制解除：将角度限制（0x06~0x09）设为 0，使舵机进入轮式模式
          */
         // 设置舵机进入电机调速模式
-        std::vector<uint8_t> buildEnterWheelMode();
+        std::vector<uint8_t> buildMotorMode();
+
+        // 回到舵机模式
+        std::vector<uint8_t> buildServoMode();
 
         /**
          * 速度控制：速度大小由 0x20~0x21 控制，低 10 位（BIT0~BIT9）存储速度值，高 1 位（BIT10）表示方向：
@@ -471,9 +473,10 @@ namespace servo {
     public:
         ServoEEPROM eeprom;
         ServoRAM ram;
+        Motor motor;
 
         explicit ServoProtocol(uint8_t id)
-                : Base(id), eeprom(id), ram(id) {}
+                : Base(id), eeprom(id), ram(id), motor(id) {}
     };
 
 

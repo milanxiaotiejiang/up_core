@@ -262,8 +262,6 @@ PYBIND11_MODULE(up_core, m) {
             .def("buildGetCcwComplianceSlope", &servo::ServoRAM::buildGetCcwComplianceSlope, "读取逆时针比例系数")
             .def("buildMoveToPosition", &servo::ServoRAM::buildMoveToPosition, py::arg("angle"),
                  "同步 控制舵机 直接移动到目标角度")
-            .def("buildMoveToWithSpeedRatio", &servo::ServoRAM::buildMoveToWithSpeedRatio, py::arg("angle"),
-                 py::arg("speed_ratio"), "目标角度和速度")
             .def("buildMoveToWithSpeedRpm", &servo::ServoRAM::buildMoveToWithSpeedRpm, py::arg("angle"),
                  py::arg("rpm"), "目标角度和速度 rpm")
             .def("buildAsyncMoveToPosition", &servo::ServoRAM::buildAsyncMoveToPosition, py::arg("angle"),
@@ -287,14 +285,16 @@ PYBIND11_MODULE(up_core, m) {
 
     py::class_<servo::Motor>(m, "Motor")
             .def(py::init<uint8_t>(), py::arg("id"), "构造 Motor 对象")
-            .def("buildEnterWheelMode", &servo::Motor::buildEnterWheelMode, "设置舵机进入电机调速模式")
+            .def("buildMotorMode", &servo::Motor::buildMotorMode, "设置舵机进入电机调速模式")
+            .def("buildServoMode", &servo::Motor::buildServoMode, "设置舵机回到舵机模式")
             .def("buildSetMotorSpeed", &servo::Motor::buildSetMotorSpeed, py::arg("rpm"), "设置电机模式的转速")
             .def("buildRestoreAngleLimits", &servo::Motor::buildRestoreAngleLimits, "还原角度");
 
     py::class_<servo::ServoProtocol>(m, "ServoProtocol")
             .def(py::init<uint8_t>(), py::arg("id"), "构造 ServoProtocol 对象")
             .def_readwrite("eeprom", &servo::ServoProtocol::eeprom)   // 暴露 eeprom
-            .def_readwrite("ram", &servo::ServoProtocol::ram);        // 暴露 ram
+            .def_readwrite("ram", &servo::ServoProtocol::ram)        // 暴露 ram
+            .def_readwrite("motor", &servo::ServoProtocol::motor);   // 暴露 motor
 
     // Bind the bytesize_t enum
     py::enum_<serial::bytesize_t>(m, "bytesize_t")

@@ -4,7 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from pup_core.http_routes import serial_router, status_router
+from pup_core.http_routes import serial_router, status_router, servo_router, motor_router
 from pup_core.model.response_models import ErrorResponse
 from pup_core.ws_routes import notifications_router, message_router
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -86,6 +86,8 @@ app.add_middleware(
 # 包含 HTTP 路由
 app.include_router(serial_router, prefix="/serial")
 app.include_router(status_router, prefix="/status")
+app.include_router(servo_router, prefix="/servo")
+app.include_router(motor_router, prefix="/motor")
 
 # 包含 WebSocket 路由
 app.include_router(notifications_router, prefix="/ws/notifications")

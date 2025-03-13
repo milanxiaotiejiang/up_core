@@ -170,7 +170,7 @@ namespace servo {
 
     // 读取顺时针角度限制
     std::vector<uint8_t> ServoEEPROM::buildGetCwAngleLimit() {
-        return buildCommandPacket(ORDER::READ_DATA, static_cast<uint8_t>(EEPROM::CW_ANGLE_LIMIT_L), {0x02});
+        return buildCommandPacket(ORDER::READ_DATA, static_cast<uint8_t>(EEPROM::CW_ANGLE_LIMIT_L), {0x04});
     }
 
     // 读取逆时针角度限制
@@ -360,11 +360,11 @@ namespace servo {
     // 同步 控制舵机 直接移动到目标角度
     std::vector<uint8_t> ServoRAM::buildMoveToPosition(float angle) {
         if (angle < 0.0f || angle > 300.0f) {
-            throw std::out_of_range("目标角度超出范围 (0° - 300°)");
+            throw std::out_of_range("目标角度超出范围 [0° - 300°]");
         }
 
         // 计算目标位置 (0x0000 - 0x03FF)
-        uint16_t position = static_cast<uint16_t>((angle / 300.0f) * 1024);
+        uint16_t position = static_cast<uint16_t>((angle / 300.0f) * 1023);
 
         return buildCommandPacket(ORDER::WRITE_DATA, static_cast<uint8_t>(RAM::GOAL_POSITION_L), {
                 static_cast<uint8_t>(position & 0xFF),  // 低字节
@@ -373,19 +373,19 @@ namespace servo {
     }
 
     // 目标角度和速度
-    std::vector<uint8_t> ServoRAM::buildMoveToWithSpeedRatio(float angle, float speed_ratio) {
+    std::vector<uint8_t> ServoRAM::buildMoveToWithSpeedRpm(float angle, float rpm) {
         if (angle < 0.0f || angle > 300.0f) {
-            throw std::out_of_range("目标角度超出范围 (0° - 300°)");
+            throw std::out_of_range("目标角度超出范围 [0° - 300°]");
         }
-        if (speed_ratio < 0.0f || speed_ratio > 1.0f) {
-            throw std::out_of_range("速度比例超出范围 (0 - 1)");
+        if (rpm <= 0 || rpm > 62.0f) {
+            throw std::out_of_range("RPM 超出范围 (0 - 62.0]");
         }
 
         // **修正：目标位置计算**
-        uint16_t position = static_cast<uint16_t>((angle / 300.0f) * 1024); // 0x0000 - 0x03FF
+        uint16_t position = static_cast<uint16_t>((angle / 300.0f) * 1023); // 0x0000 - 0x03FF
 
         // **修正：速度计算**
-        uint16_t speed = static_cast<uint16_t>(speed_ratio * 1024); // 0x0000 - 0x03FF
+        uint16_t speed = static_cast<uint16_t>(rpm * 1023.0f / 62.0f); // 0x0000 - 0x03FF
 
         return buildCommandPacket(ORDER::WRITE_DATA, static_cast<uint8_t>(RAM::GOAL_POSITION_L), {
                 static_cast<uint8_t>(position & 0xFF),  // 位置低字节
@@ -396,16 +396,11 @@ namespace servo {
 
     }
 
-    // 目标角度和速度
-    std::vector<uint8_t> ServoRAM::buildMoveToWithSpeedRpm(float angle, float rpm) {
-        return buildMoveToWithSpeedRatio(angle, rpmToSpeedRatio(rpm));
-    }
-
 
     // 异步写 (REG_WRITE)，舵机 不立即运动，等待 ACTION 指令
     std::vector<uint8_t> ServoRAM::buildAsyncMoveToPosition(float angle) {
         if (angle < 0.0f || angle > 300.0f) {
-            throw std::out_of_range("目标角度超出范围 (0° - 300°)");
+            throw std::out_of_range("目标角度超出范围 [0° - 300°]");
         }
 
         // 计算目标位置 (0x0000 - 0x03FF)
@@ -501,9 +496,14 @@ namespace servo {
     Motor::Motor(uint8_t id) : Base(id) {}
 
     // 设置舵机进入电机调速模式
-    std::vector<uint8_t> Motor::buildEnterWheelMode() {
+    std::vector<uint8_t> Motor::buildMotorMode() {
         return buildCommandPacket(ORDER::WRITE_DATA, static_cast<uint8_t>(EEPROM::CW_ANGLE_LIMIT_L),
                                   {0x00, 0x00, 0x00, 0x00});
+    }
+
+    std::vector<uint8_t> Motor::buildServoMode() {
+        return buildCommandPacket(ORDER::WRITE_DATA, static_cast<uint8_t>(EEPROM::CW_ANGLE_LIMIT_L),
+                                  {0x00, 0x00, 0xff, 0x03});
     }
 
     // 设置电机模式的转速

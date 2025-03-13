@@ -10,27 +10,41 @@
 #include <thread>
 #include <chrono>
 #include "servo_manager.h"
+#include "firmware_update.h"
 
 int main() {
 
-    Logger::setLogLevel(Logger::DEBUG);
-    Logger::info(ServoManager::instance().searching() ? "正在搜索中..." : "搜索已停止");
+    Logger::setLogLevel(Logger::INFO);
 
-    std::thread stopThread([]() {
-//        std::this_thread::sleep_for(std::chrono::milliseconds(10000));
-//        ServoManager::instance().stopSearchServoID();
-    });
-    stopThread.detach();
+    // 固件升级
 
-    ServoManager::instance().setCallback([](int baud, int id, int error) {
-        Logger::info("----------------      ID: " + std::to_string(id) + ", 错误码: " + std::to_string(error));
-    });
-    ServoManager::instance().startSearchServoID("/dev/ttyUSB0", {1000000});
+//    FirmwareUpdate sender;
+//    try {
+//        sender.sendData("example.bin", 3);
+//    } catch (const std::exception& e) {
+//        std::cerr << e.what() << std::endl;
+//    }
+//    return 0;
 
+    // 搜索舵机 ID
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(30000));
-
-    return 0;
+//    Logger::info(ServoManager::instance().searching() ? "正在搜索中..." : "搜索已停止");
+//
+//    std::thread stopThread([]() {
+////        std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+////        ServoManager::instance().stopSearchServoID();
+//    });
+//    stopThread.detach();
+//
+//    ServoManager::instance().setCallback([](int baud, int id, int error) {
+//        Logger::info("----------------      ID: " + std::to_string(id) + ", 错误码: " + std::to_string(error));
+//    });
+//    ServoManager::instance().startSearchServoID("/dev/ttyUSB0", {1000000});
+//
+//
+//    std::this_thread::sleep_for(std::chrono::milliseconds(30000));
+//
+//    return 0;
 
     try {
 
@@ -137,38 +151,73 @@ int main() {
 //            std::this_thread::sleep_for(std::chrono::microseconds(1000));
 //        }
 
-        {
-            servo.setDataCallback([&servo](const std::vector<uint8_t> &data) {
-                servo.performSerialData(data);
-            });
-
-            servo::ServoProtocol servoProtocol1(1);
-            auto data1 = servoProtocol1.buildPingPacket();
-            std::vector<uint8_t> response_data;
-            bool success1 = servo.sendWaitCommand(data1, response_data);
-            if (success1) {
-                servo.performSerialData(response_data);
-            }
-
-            for (int i = 0; i < 254; ++i) {
-                // 等待 100 ms
-                std::this_thread::sleep_for(std::chrono::microseconds(1000));
-                Logger::info("搜索 ID: " + std::to_string(i));
-                servo::ServoProtocol servoProtocol(i);
-                auto data = servoProtocol.buildPingPacket();
-                bool success = servo.sendCommand(data);
-            }
-
-            std::this_thread::sleep_for(std::chrono::microseconds(10000));
-        }
-
-        // 电机模式
-//        servo::Motor motor(0x01);
-//
 //        {
-//            // **31 RPM 顺时针**
-//            std::vector<uint8_t> cmd = motor.buildSetMotorSpeed(31.0f);
-//            std::vector<uint8_t> expected_cmd = {0xFF, 0xFF, 0x00, 0x05, 0x03, 0x20, 0x00, 0x06, 0xD1};
+//            servo.setDataCallback([&servo](const std::vector<uint8_t> &data) {
+//                servo.performSerialData(data);
+//            });
+//
+//            servo::ServoProtocol servoProtocol1(1);
+//            auto data1 = servoProtocol1.buildPingPacket();
+//            std::vector<uint8_t> response_data;
+//            bool success1 = servo.sendWaitCommand(data1, response_data);
+//            if (success1) {
+//                servo.performSerialData(response_data);
+//            }
+//
+//            for (int i = 0; i < 254; ++i) {
+//                // 等待 100 ms
+//                std::this_thread::sleep_for(std::chrono::microseconds(1000));
+//                Logger::info("搜索 ID: " + std::to_string(i));
+//                servo::ServoProtocol servoProtocol(i);
+//                auto data = servoProtocol.buildPingPacket();
+//                bool success = servo.sendCommand(data);
+//            }
+//
+//            std::this_thread::sleep_for(std::chrono::microseconds(10000));
+//        }
+
+//        {
+//            servo::ServoProtocol servoProtocol(0x01);
+//            const std::vector<uint8_t> &vector = servoProtocol.motor.buildMotorMode();
+//            for (const auto &item: vector) {
+//                std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(item) << " ";
+//            }
+//            std::cout << std::endl;
+//            const std::vector<uint8_t> &mode = servoProtocol.motor.buildServoMode();
+//            for (const auto &item: mode) {
+//                std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(item) << " ";
+//            }
+//            std::cout << std::endl;
+//
+//            serialPtr->write(vector);
+//            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+//            serialPtr->write(mode);
+//            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+//
+//        }
+
+        servo::ServoProtocol servoProtocol(0x01);
+
+//        {
+//            const std::vector<uint8_t> &mode = servoProtocol.motor.buildServoMode();
+////            const std::vector<uint8_t> &mode = servoProtocol.motor.buildMotorMode();
+//            Logger::info("发送命令：" + bytesToHex(mode));
+//
+//            std::vector<uint8_t> response_data;
+//            bool success = servo.sendWaitCommand(mode, response_data);
+//            if (success) {
+//                // 处理响应数据
+//                servo.performSerialData(response_data);
+//            }
+//
+//            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+//        }
+
+//        {
+//            // FF FF 00 07 03 1E 00 02 00 02 D3     0 号舵机以中速运动至 150°的位置，中速 0x01ff，150° 0x01ff
+//            // FF FF 01 07 03 1E 00 02 FF 01 D4     1 号舵机以中速运动至 150°的位置，中速 0x01ff，150° 0x01ff
+//            std::vector<uint8_t> cmd = servoProtocol.ram.buildMoveToWithSpeedRpm(300.0f, 31.0f);
+//            Logger::info("发送命令：" + bytesToHex(cmd));
 //
 //            std::vector<uint8_t> response_data;
 //            bool success = servo.sendWaitCommand(cmd, response_data);
@@ -177,13 +226,12 @@ int main() {
 //                servo.performSerialData(response_data);
 //            }
 //
-//            sleep(3);
+//            std::this_thread::sleep_for(std::chrono::milliseconds(5000));
 //        }
-//
+
 //        {
-//            // **31 RPM 逆时针**
-//            std::vector<uint8_t> cmd = motor.buildSetMotorSpeed(-31.0f);
-//            std::vector<uint8_t> expected_cmd = {0xFF, 0xFF, 0x00, 0x05, 0x03, 0x20, 0x00, 0x02, 0xd5};
+//            // **RPM 顺时针**
+//            std::vector<uint8_t> cmd = servoProtocol.motor.buildSetMotorSpeed(32.0f);
 //
 //            std::vector<uint8_t> response_data;
 //            bool success = servo.sendWaitCommand(cmd, response_data);
@@ -192,13 +240,24 @@ int main() {
 //                servo.performSerialData(response_data);
 //            }
 //
-//            sleep(3);
+//            std::this_thread::sleep_for(std::chrono::milliseconds(5000));
 //        }
+//        {
+//            // **RPM 逆时针**
+//            std::vector<uint8_t> cmd = servoProtocol.motor.buildSetMotorSpeed(-32.0f);
 //
+//            std::vector<uint8_t> response_data;
+//            bool success = servo.sendWaitCommand(cmd, response_data);
+//            if (success) {
+//                // 处理响应数据
+//                servo.performSerialData(response_data);
+//            }
+//
+//            std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+//        }
 //        {
 //            // **停止 (速度 0)**
-//            std::vector<uint8_t> cmd = motor.buildSetMotorSpeed(0.0f);
-//            std::vector<uint8_t> expected_cmd = {0xFF, 0xFF, 0x00, 0x05, 0x03, 0x20, 0x00, 0x04, 0xD3};
+//            std::vector<uint8_t> cmd = servoProtocol.motor.buildSetMotorSpeed(0.0f);
 //
 //            std::vector<uint8_t> response_data;
 //            bool success = servo.sendWaitCommand(cmd, response_data);
@@ -206,8 +265,35 @@ int main() {
 //                // 处理响应数据
 //                servo.performSerialData(response_data);
 //            }
+//
+//            std::this_thread::sleep_for(std::chrono::milliseconds(5000));
 //        }
 
+//        {
+//            const std::vector<uint8_t> &angleLimit = servoProtocol.eeprom.buildGetCwAngleLimit();
+//
+//            std::vector<uint8_t> response_data;
+//            bool success = servo.sendWaitCommand(angleLimit, response_data);
+//            if (success) {
+//                // ff ff 01 06 02 00 00 00 00 f6 电机
+//                // ff ff 01 06 00 00 00 ff 03 f6 舵机
+//                servo.performSerialData(response_data);
+//            }
+//            std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+//        }
+
+//        {
+//            // ff ff 01 03 06 f5
+//            // FF FF 01 03 06 F5
+//            const std::vector<uint8_t> &vector = servoProtocol.buildResetPacket();
+//            Logger::info("发送命令：" + bytesToHex(vector));
+//
+//            bool success = servo.sendCommand(vector);
+//            if (success) {
+//                Logger::info("复位成功");
+//            }
+//            std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+//        }
 
         servo.close();
 

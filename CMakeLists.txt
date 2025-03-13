@@ -68,6 +68,8 @@ set(up_core_SRCS
         include/logger.h
         include/servo_manager.h
         src/servo_manager.cpp
+        include/firmware_update.h
+        src/firmware_update.cpp
 )
 
 if (APPLE)

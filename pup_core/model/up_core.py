@@ -22,6 +22,8 @@ class UpErrorCode:
     NO_DATA_AVAILABLE = 3004  # 没有可用数据
     SERIAL_NOT_FOUND = 3005  # 串口未找到
 
+    FILE_NOT_FOUND = 4001  # 文件未找到
+
     PAYMENT_FAILED = 5001  # 支付失败
 
     UNKNOWN_ERROR = 9999  # 未知错误

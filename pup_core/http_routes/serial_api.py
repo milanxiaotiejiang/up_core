@@ -6,14 +6,17 @@ from fastapi import APIRouter, Depends, HTTPException
 import up_core as serial
 from up_core import ServoProtocol
 from up_core import ServoManager
+from up_core import Base
 
 from ..dependencies import get_serial_manager
 from ..exceptions import handle_exceptions
-from ..model.request_models import HttpRequest, SerialRequest, OpenSerialRequest, WriteRequest, SearchIdRequest
+from ..model.request_models import HttpRequest, SerialRequest, OpenSerialRequest, WriteRequest, SearchIdRequest, \
+    AngleRequest
 from ..model.response_models import SuccessResponse
 from ..model.response_models import ErrorResponse
 from ..servo_parser import perform_serial_data, perform_version
 from ..servo_parser import ServoError
+from ..utils.resolve import identify_mode
 
 logger = logging.getLogger("serial_api")
 
@@ -33,6 +36,18 @@ async def open(request: OpenSerialRequest, serial_manager=Depends(get_serial_man
 async def close(request: SerialRequest, serial_manager=Depends(get_serial_manager)):
     serial_manager.close(request.serial_id)
     return SuccessResponse(status=True)
+
+
+@router.post("/reset")
+@handle_exceptions
+async def close(request: HttpRequest, serial_manager=Depends(get_serial_manager)):
+    servoProtocol = Base(request.protocol_id)
+    data = servoProtocol.buildResetPacket()
+    success = serial_manager.write(request.serial_id, data)
+    if success:
+        return SuccessResponse(status=True)
+    else:
+        return ErrorResponse(status=False, message="Failed to reset servo.")
 
 
 @router.post("/get_version")
@@ -56,7 +71,7 @@ async def get_version(request: HttpRequest, serial_manager=Depends(get_serial_ma
         error_code, version = perform_version(payload)
         return SuccessResponse(status=True, data=version)
     else:
-        return ErrorResponse(status=False, message="Failed to parse the response data.")
+        return ErrorResponse(status=False, message="Parsing failed, servo error code: " + str(error_code))
 
 
 @router.post("/write")
@@ -107,6 +122,24 @@ async def async_write(request: SearchIdRequest):
 @handle_exceptions
 async def async_write(request: WriteRequest):
     pass
+
+
+@router.post("/mode")
+@handle_exceptions
+async def mode(request: HttpRequest, serial_manager=Depends(get_serial_manager)):
+    servoProtocol = ServoProtocol(request.protocol_id)
+    data = servoProtocol.eeprom.buildGetCwAngleLimit()
+    byte_buffer = serial_manager.write_wait(request.serial_id, data)
+
+    if byte_buffer is None:
+        return ErrorResponse(status=False, message="No response received.")
+
+    error_code, payload = perform_serial_data(byte_buffer)
+
+    if error_code == ServoError.NO_ERROR:
+        return SuccessResponse(status=True, data=identify_mode(payload))
+    else:
+        return ErrorResponse(status=False, message="Parsing failed, servo error code: " + str(error_code))
 
 
 def list_serial_ports():

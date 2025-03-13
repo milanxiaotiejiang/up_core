@@ -32,6 +32,7 @@ from up_core import flowcontrol_t
 from up_core import Serial
 from up_core import Servo
 from up_core import ServoProtocol
+from up_core import Base
 
 from up_core import ServoManager
 
@@ -43,3 +44,6 @@ result = up.add(3, 5)
 print(result)  # 输出 8
 
 up.system("ls")
+
+servoProtocol = Base(0)
+data = servoProtocol.buildResetPacket()
