@@ -4,7 +4,7 @@ import logging
 from functools import wraps
 
 from pup_core.model.response_models import ErrorResponse, UpErrorCode
-from pup_core.model.up_exception import SerialException
+from pup_core.model.up_exception import PySerialException
 
 logger = logging.getLogger("exceptions")
 
@@ -12,7 +12,7 @@ logger = logging.getLogger("exceptions")
 def handle_exception(e):
     """统一异常处理"""
     exception_map = {
-        SerialException: (400, lambda e: e.to_response()),
+        PySerialException: (400, lambda e: e.to_response()),
         ValueError: (400, lambda e: ErrorResponse(code=UpErrorCode.INVALID_PARAMS, message=str(e)).dict()),
         TypeError: (400, lambda _: ErrorResponse(code=400, message="Invalid input type").dict()),
         KeyError: (

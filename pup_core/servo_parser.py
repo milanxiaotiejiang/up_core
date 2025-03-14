@@ -1,7 +1,7 @@
 import logging
 from typing import List, Tuple, Optional
 from pup_core.model.up_core import UpErrorCode
-from pup_core.model.up_exception import SerialException
+from pup_core.model.up_exception import PySerialException
 
 
 # 定义舵机错误的枚举

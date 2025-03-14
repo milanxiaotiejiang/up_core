@@ -42,7 +42,7 @@ class NotFoundException(UpException):
         super().__init__(code=3001, message=message)
 
 
-class SerialException(Exception):
+class PySerialException(Exception):
     """ 业务异常基类 """
 
     def __init__(self, code: int, message: str):

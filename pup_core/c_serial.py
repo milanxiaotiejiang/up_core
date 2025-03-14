@@ -1,7 +1,7 @@
 import up_core as serial
 
 from pup_core.model.up_core import UpErrorCode
-from pup_core.model.up_exception import SerialException
+from pup_core.model.up_exception import PySerialException
 
 
 def open_serial(device, baudrate=9600, parity='none', databits=8, stopbits=1, flowcontrol='none', timeout=1.0):
@@ -73,12 +73,21 @@ def open_serial(device, baudrate=9600, parity='none', databits=8, stopbits=1, fl
         # 打开串口
         # ser.open()
         if not ser.isOpen():
-            raise SerialException(UpErrorCode.OPEN_SERIAL_FAILED, "Failed to open serial port.")
+            raise PySerialException(UpErrorCode.OPEN_SERIAL_FAILED, "Failed to open serial port.")
 
         return ser
 
     except Exception as e:
-        raise SerialException(UpErrorCode.UNDER_ERROR, str(e))
+        raise PySerialException(UpErrorCode.UNDER_ERROR, str(e))
+
+
+def is_open(ser):
+    """
+    检查串口是否已打开。
+    :param ser: 串口对象
+    :return: True if the serial port is open, False otherwise
+    """
+    return ser.isOpen()
 
 
 def close_serial(ser):
@@ -86,8 +95,7 @@ def close_serial(ser):
     关闭串口。
     :param ser: 串口对象
     """
-    if ser.isOpen():
-        ser.close()
+    ser.close()
 
 
 def list_serial_ports():
@@ -118,14 +126,14 @@ def write(ser, data: bytes):
     :return:
     """
     if not ser.isOpen():
-        raise SerialException(UpErrorCode.SERIAL_NOT_OPEN, "Serial port is not open.")
+        raise PySerialException(UpErrorCode.SERIAL_NOT_OPEN, "Serial port is not open.")
 
     ser.flushInput()
 
     bytes_written = ser.write(data)
 
     if bytes_written != len(data):
-        raise SerialException(UpErrorCode.WRITE_DATA_FAILED, "Failed to write all data to serial port.")
+        raise PySerialException(UpErrorCode.WRITE_DATA_FAILED, "Failed to write all data to serial port.")
 
     return ser.waitReadable()
 
@@ -141,4 +149,4 @@ def read(ser, available_bytes):
         buffer, bytes_read = ser.read(available_bytes)
         return bytearray(buffer)
     else:
-        raise SerialException(UpErrorCode.NO_DATA_AVAILABLE, "No data available to read from serial port.")
+        raise PySerialException(UpErrorCode.NO_DATA_AVAILABLE, "No data available to read from serial port.")

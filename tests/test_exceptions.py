@@ -2,7 +2,7 @@ import asyncio
 
 import pytest
 from fastapi.responses import JSONResponse
-from pup_core.exceptions import handle_exceptions, SerialException, ErrorResponse, UpErrorCode
+from pup_core.exceptions import handle_exceptions, PySerialException, ErrorResponse, UpErrorCode
 
 
 @handle_exceptions
@@ -21,7 +21,7 @@ async def async_test_func(exception_type=None):
 
 @pytest.mark.parametrize("test_func", [sync_test_func, async_test_func])
 @pytest.mark.parametrize("exception, status_code, expected_message", [
-    (SerialException, 400, "test error"),
+    (PySerialException, 400, "test error"),
     (ValueError, 400, "test error"),
     (TypeError, 400, "Invalid input type"),
     (KeyError, 400, "Missing key: 'test error'"),

@@ -47,3 +47,4 @@ up.system("ls")
 
 servoProtocol = Base(0)
 data = servoProtocol.buildResetPacket()
+print(issubclass(up.SerialException, Exception))  # True
