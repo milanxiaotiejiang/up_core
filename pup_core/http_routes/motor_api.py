@@ -27,7 +27,7 @@ async def motor(request: HttpRequest, serial_manager=Depends(get_serial_manager)
     # 将 bytes 转换为十六进制字符串
     logger.info(f"Motor mode hex data: {binascii.hexlify(data_bytes).decode('utf-8')}")
 
-    byte_buffer = serial_manager.write_wait(request.serial_id, data)
+    byte_buffer = await serial_manager.write_wait(request.serial_id, data)
     if byte_buffer is None:
         return ErrorResponse(status=False, message="No response received.")
     error_code, payload = perform_serial_data(byte_buffer)
@@ -42,7 +42,7 @@ async def motor(request: HttpRequest, serial_manager=Depends(get_serial_manager)
 async def angle(request: MotorSpeedRequest, serial_manager=Depends(get_serial_manager)):
     servoProtocol = ServoProtocol(request.protocol_id)
     data = servoProtocol.motor.buildSetMotorSpeed(request.rpm)
-    byte_buffer = serial_manager.write_wait(request.serial_id, data)
+    byte_buffer = await serial_manager.write_wait(request.serial_id, data)
     if byte_buffer is None:
         return ErrorResponse(status=False, message="No response received.")
     error_code, payload = perform_serial_data(byte_buffer)

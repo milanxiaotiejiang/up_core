@@ -20,7 +20,7 @@ router = APIRouter()
 async def servo(request: HttpRequest, serial_manager=Depends(get_serial_manager)):
     servoProtocol = ServoProtocol(request.protocol_id)
     data = servoProtocol.motor.buildServoMode()
-    byte_buffer = serial_manager.write_wait(request.serial_id, data)
+    byte_buffer = await serial_manager.write_wait(request.serial_id, data)
     if byte_buffer is None:
         return ErrorResponse(status=False, message="No response received.")
     error_code, payload = perform_serial_data(byte_buffer)
@@ -35,7 +35,7 @@ async def servo(request: HttpRequest, serial_manager=Depends(get_serial_manager)
 async def angle(request: AngleRequest, serial_manager=Depends(get_serial_manager)):
     servoProtocol = ServoProtocol(request.protocol_id)
     data = servoProtocol.ram.buildMoveToWithSpeedRpm(request.angle, request.rpm)
-    byte_buffer = serial_manager.write_wait(request.serial_id, data)
+    byte_buffer = await serial_manager.write_wait(request.serial_id, data)
     if byte_buffer is None:
         return ErrorResponse(status=False, message="No response received.")
     error_code, payload = perform_serial_data(byte_buffer)

@@ -43,7 +43,7 @@ async def close(request: SerialRequest, serial_manager=Depends(get_serial_manage
 async def close(request: HttpRequest, serial_manager=Depends(get_serial_manager)):
     servoProtocol = Base(request.protocol_id)
     data = servoProtocol.buildResetPacket()
-    success = serial_manager.write(request.serial_id, data)
+    success = await serial_manager.write(request.serial_id, data)
     if success:
         return SuccessResponse(status=True)
     else:
@@ -60,7 +60,7 @@ async def get_version(request: HttpRequest, serial_manager=Depends(get_serial_ma
     data = servoProtocol.eeprom.buildGetSoftwareVersion()
 
     # 发送数据并获取返回数据
-    byte_buffer = serial_manager.write_wait(request.serial_id, data)
+    byte_buffer = await serial_manager.write_wait(request.serial_id, data)
 
     if byte_buffer is None:
         return ErrorResponse(status=False, message="No response received.")
@@ -81,7 +81,7 @@ async def sync_write(request: WriteRequest, serial_manager=Depends(get_serial_ma
     try:
         raw_data = binascii.unhexlify(raw_data_hex.replace(" ", ""))
 
-        success = serial_manager.write(request.serial_id, raw_data)
+        success = await serial_manager.write(request.serial_id, raw_data)
         if success:
             return SuccessResponse(status=True)
         else:
@@ -97,7 +97,7 @@ async def async_write(request: WriteRequest, serial_manager=Depends(get_serial_m
     try:
         raw_data = binascii.unhexlify(raw_data_hex.replace(" ", ""))
 
-        byte_buffer = serial_manager.write_wait(request.serial_id, raw_data)
+        byte_buffer = await serial_manager.write_wait(request.serial_id, raw_data)
 
         if byte_buffer is None:
             return ErrorResponse(status=False, message="No response received.")
@@ -129,7 +129,7 @@ async def async_write(request: WriteRequest):
 async def mode(request: HttpRequest, serial_manager=Depends(get_serial_manager)):
     servoProtocol = ServoProtocol(request.protocol_id)
     data = servoProtocol.eeprom.buildGetCwAngleLimit()
-    byte_buffer = serial_manager.write_wait(request.serial_id, data)
+    byte_buffer = await serial_manager.write_wait(request.serial_id, data)
 
     if byte_buffer is None:
         return ErrorResponse(status=False, message="No response received.")
