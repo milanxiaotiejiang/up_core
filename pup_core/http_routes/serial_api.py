@@ -9,13 +9,13 @@ from up_core import ServoManager
 from up_core import Base
 
 from ..dependencies import get_serial_manager
-from ..exceptions import handle_exceptions
+from pup_core.exception.exceptions import handle_exceptions
 from ..model.request_models import HttpRequest, SerialRequest, OpenSerialRequest, WriteRequest, SearchIdRequest, \
     AngleRequest
 from ..model.response_models import SuccessResponse
 from ..model.response_models import ErrorResponse
-from ..servo_parser import perform_serial_data, perform_version
-from ..servo_parser import ServoError
+from pup_core.serial.servo_parser import perform_serial_data, perform_version
+from pup_core.serial.servo_parser import ServoError
 from ..utils.resolve import identify_mode
 
 logger = logging.getLogger("serial_api")

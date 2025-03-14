@@ -5,10 +5,10 @@ from fastapi import APIRouter, Depends
 from up_core import ServoProtocol, ServoError
 
 from pup_core.dependencies import get_serial_manager
-from pup_core.exceptions import handle_exceptions
+from pup_core.exception.exceptions import handle_exceptions
 from pup_core.model.request_models import HttpRequest, AngleRequest
 from pup_core.model.response_models import ErrorResponse, SuccessResponse
-from pup_core.servo_parser import perform_serial_data
+from pup_core.serial.servo_parser import perform_serial_data
 
 logger = logging.getLogger("servo_api")
 

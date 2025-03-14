@@ -1,13 +1,11 @@
 # dependencies.py
 import asyncio
-import time
 
-import pup_core.serial_manager as sm
+import serial.serial_manager as sm
 import logging
 from up_core import ServoProtocol, ServoError
 
-from pup_core.servo_parser import perform_serial_data
-from pup_core.utils.resolve import identify_mode
+from serial.servo_parser import perform_serial_data
 
 # 创建 serial_manager 实例
 serial_manager = sm.SerialManager()

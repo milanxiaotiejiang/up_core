@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 import logging
 
-from pup_core.exceptions import handle_exceptions
+from pup_core.exception.exceptions import handle_exceptions
 from pup_core.model.response_models import SuccessResponse, ErrorResponse
 from pup_core.model.up_exception import UnauthorizedException, ForbiddenException
 
