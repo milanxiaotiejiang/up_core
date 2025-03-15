@@ -70,6 +70,8 @@ set(up_core_SRCS
         src/servo_manager.cpp
         include/firmware_update.h
         src/firmware_update.cpp
+        include/servo_protocol_parse.h
+        src/servo_protocol_parse.cpp
 )
 
 if (APPLE)

@@ -8,7 +8,7 @@ from pup_core.dependencies import get_serial_manager
 from pup_core.exception.exceptions import handle_exceptions
 from pup_core.model.request_models import HttpRequest, AngleRequest
 from pup_core.model.response_models import ErrorResponse, SuccessResponse
-from pup_core.serial.servo_parser import perform_serial_data
+from pup_core.serial.servo_parser import preview_data
 
 logger = logging.getLogger("servo_api")
 
@@ -23,7 +23,7 @@ async def servo(request: HttpRequest, serial_manager=Depends(get_serial_manager)
     byte_buffer = await serial_manager.write_wait(request.serial_id, data)
     if byte_buffer is None:
         return ErrorResponse(status=False, message="No response received.")
-    error_code, payload = perform_serial_data(byte_buffer)
+    error_code, payload = preview_data(byte_buffer)
     if error_code == ServoError.NO_ERROR:
         return SuccessResponse(status=True)
     else:
@@ -38,7 +38,7 @@ async def angle(request: AngleRequest, serial_manager=Depends(get_serial_manager
     byte_buffer = await serial_manager.write_wait(request.serial_id, data)
     if byte_buffer is None:
         return ErrorResponse(status=False, message="No response received.")
-    error_code, payload = perform_serial_data(byte_buffer)
+    error_code, payload = preview_data(byte_buffer)
     if error_code == ServoError.NO_ERROR:
         return SuccessResponse(status=True)
     else:

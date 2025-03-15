@@ -5,11 +5,11 @@
 #ifndef UP_CORE_LOGGER_H
 #define UP_CORE_LOGGER_H
 
-
 #include <iostream>
 #include <string>
 #include <mutex>
 #include <vector>
+#include "servo_protocol.h"
 
 class Logger {
 public:
@@ -44,7 +44,5 @@ private:
 
     static const char *logLevelToString(LogLevel level);
 };
-
-std::string bytesToHex(const std::vector<uint8_t> &data);
 
 #endif //UP_CORE_LOGGER_H

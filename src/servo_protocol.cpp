@@ -178,6 +178,11 @@ namespace servo {
         return buildCommandPacket(ORDER::READ_DATA, static_cast<uint8_t>(EEPROM::CCW_ANGLE_LIMIT_L), {0x02});
     }
 
+    // 读取角度限制
+    std::vector<uint8_t> ServoEEPROM::buildGetAngleLimit() {
+        return buildCommandPacket(ORDER::READ_DATA, static_cast<uint8_t>(EEPROM::CW_ANGLE_LIMIT_L), {0x04});
+    }
+
     // 读取最高温度上限
     std::vector<uint8_t> ServoEEPROM::buildGetMaxTemperature() {
         return buildCommandPacket(ORDER::READ_DATA, static_cast<uint8_t>(EEPROM::MAX_TEMPERATURE), {0x01});
@@ -191,6 +196,11 @@ namespace servo {
     // 读取最高输入电压
     std::vector<uint8_t> ServoEEPROM::buildGetMaxVoltage() {
         return buildCommandPacket(ORDER::READ_DATA, static_cast<uint8_t>(EEPROM::MAX_VOLTAGE), {0x01});
+    }
+
+    // 读取输入电压范围
+    std::vector<uint8_t> ServoEEPROM::buildGetVoltageRange() {
+        return buildCommandPacket(ORDER::READ_DATA, static_cast<uint8_t>(EEPROM::MIN_VOLTAGE), {0x02});
     }
 
     // 读取最大扭矩
@@ -314,6 +324,11 @@ namespace servo {
         });
     }
 
+    // 读取指定长度的 Eeprom 数据
+    std::vector<uint8_t> ServoEEPROM::buildGetEepromData(EEPROM eeprom, int length) {
+        return buildCommandPacket(ORDER::READ_DATA, static_cast<uint8_t>(eeprom), {static_cast<uint8_t>(length)});
+    }
+
 
     ServoRAM::ServoRAM(uint8_t id) : Base(id) {}
 
@@ -429,12 +444,12 @@ namespace servo {
         });
     }
 
-    std::vector<uint8_t> ServoRAM::buildGetPosition() {
-        return buildCommandPacket(ORDER::READ_DATA, static_cast<uint8_t>(RAM::PRESENT_POSITION_L), {2});
+    std::vector<uint8_t> ServoRAM::buildGetGoalPosition() {
+        return buildCommandPacket(ORDER::READ_DATA, static_cast<uint8_t>(RAM::GOAL_POSITION_L), {0x02});
     }
 
-    std::vector<uint8_t> ServoRAM::buildGetSpeed() {
-        return buildCommandPacket(ORDER::READ_DATA, static_cast<uint8_t>(RAM::PRESENT_SPEED_L), {2});
+    std::vector<uint8_t> ServoRAM::buildGetRunSpeed() {
+        return buildCommandPacket(ORDER::READ_DATA, static_cast<uint8_t>(RAM::MOVING_SPEED_L), {0x02});
     }
 
     std::vector<uint8_t> ServoRAM::buildGetAcceleration() {
@@ -445,24 +460,36 @@ namespace servo {
         return buildCommandPacket(ORDER::READ_DATA, static_cast<uint8_t>(RAM::DECELERATION), {0x01});
     }
 
+    std::vector<uint8_t> ServoRAM::buildGetAccelerationDeceleration() {
+        return buildCommandPacket(ORDER::READ_DATA, static_cast<uint8_t>(RAM::ACCELERATION), {0x02});
+    }
+
+    std::vector<uint8_t> ServoRAM::buildGetPosition() {
+        return buildCommandPacket(ORDER::READ_DATA, static_cast<uint8_t>(RAM::PRESENT_POSITION_L), {0x02});
+    }
+
+    std::vector<uint8_t> ServoRAM::buildGetSpeed() {
+        return buildCommandPacket(ORDER::READ_DATA, static_cast<uint8_t>(RAM::PRESENT_SPEED_L), {0x02});
+    }
+
     std::vector<uint8_t> ServoRAM::buildGetLoad() {
-        return buildCommandPacket(ORDER::READ_DATA, static_cast<uint8_t>(RAM::PRESENT_LOAD_L), {2});
+        return buildCommandPacket(ORDER::READ_DATA, static_cast<uint8_t>(RAM::PRESENT_LOAD_L), {0x02});
     }
 
     std::vector<uint8_t> ServoRAM::buildGetVoltage() {
-        return buildCommandPacket(ORDER::READ_DATA, static_cast<uint8_t>(RAM::PRESENT_VOLTAGE), {1});
+        return buildCommandPacket(ORDER::READ_DATA, static_cast<uint8_t>(RAM::PRESENT_VOLTAGE), {0x01});
     }
 
     std::vector<uint8_t> ServoRAM::buildGetTemperature() {
-        return buildCommandPacket(ORDER::READ_DATA, static_cast<uint8_t>(RAM::TEMPERATURE), {1});
+        return buildCommandPacket(ORDER::READ_DATA, static_cast<uint8_t>(RAM::TEMPERATURE), {0x01});
     }
 
     std::vector<uint8_t> ServoRAM::buildCheckRegWriteFlag() {
-        return buildCommandPacket(ORDER::READ_DATA, static_cast<uint8_t>(RAM::REG_WRITE), {1});
+        return buildCommandPacket(ORDER::READ_DATA, static_cast<uint8_t>(RAM::REG_WRITE), {0x01});
     }
 
     std::vector<uint8_t> ServoRAM::buildCheckMovingFlag() {
-        return buildCommandPacket(ORDER::READ_DATA, static_cast<uint8_t>(RAM::MOVING), {1});
+        return buildCommandPacket(ORDER::READ_DATA, static_cast<uint8_t>(RAM::MOVING), {0x01});
     }
 
     // 设置锁标志（1：锁定，0：解锁）
@@ -490,6 +517,11 @@ namespace servo {
     // 读取最小PWM
     std::vector<uint8_t> ServoRAM::buildGetMinPWM() {
         return buildCommandPacket(ORDER::READ_DATA, static_cast<uint8_t>(RAM::MIN_PWM_L), {2});
+    }
+
+    // 读取一定长度的 RAM 数据
+    std::vector<uint8_t> ServoRAM::buildGetRamData(servo::RAM ram, int length) {
+        return buildCommandPacket(ORDER::READ_DATA, static_cast<uint8_t>(ram), {static_cast<uint8_t>(length)});
     }
 
 

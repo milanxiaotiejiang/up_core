@@ -2,8 +2,8 @@
 
 ### 概述
 
-PUP Core 是一个基于 FastAPI 的核心库，提供了串口通信和 WebSocket 通信的功能。该库支持全局异常处理和跨域请求，并包含多个
-HTTP 和 WebSocket 路由。
+PUP Core 是一个基于 FastAPI 的核心库，提供了串口通信和 WebSocket 通信的功能。
+该库支持全局异常处理和跨域请求，并包含多个 HTTP 和 WebSocket 路由。
 
 ### 功能特点
 

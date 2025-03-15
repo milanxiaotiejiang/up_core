@@ -14,7 +14,7 @@ from ..model.request_models import HttpRequest, SerialRequest, OpenSerialRequest
     AngleRequest
 from ..model.response_models import SuccessResponse
 from ..model.response_models import ErrorResponse
-from pup_core.serial.servo_parser import perform_serial_data, perform_version
+from pup_core.serial.servo_parser import preview_data, perform_version
 from pup_core.serial.servo_parser import ServoError
 from ..utils.resolve import identify_mode
 
@@ -65,7 +65,7 @@ async def get_version(request: HttpRequest, serial_manager=Depends(get_serial_ma
     if byte_buffer is None:
         return ErrorResponse(status=False, message="No response received.")
 
-    error_code, payload = perform_serial_data(byte_buffer)
+    error_code, payload = preview_data(byte_buffer)
 
     if error_code == ServoError.NO_ERROR:
         error_code, version = perform_version(payload)
@@ -134,7 +134,7 @@ async def mode(request: HttpRequest, serial_manager=Depends(get_serial_manager))
     if byte_buffer is None:
         return ErrorResponse(status=False, message="No response received.")
 
-    error_code, payload = perform_serial_data(byte_buffer)
+    error_code, payload = preview_data(byte_buffer)
 
     if error_code == ServoError.NO_ERROR:
         return SuccessResponse(status=True, data=identify_mode(payload))

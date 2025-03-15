@@ -5,6 +5,7 @@
 #include <memory>
 #include "servo_manager.h"
 #include "serial/serial.h"
+#include "servo_protocol_parse.h"
 #include "servo.h"
 #include "thread"
 
@@ -65,7 +66,7 @@ void ServoManager::startSearchThread() {
                 servo->setDataCallback([this, baud, &servo](const std::vector<uint8_t> &data) {
                     if (isVerify) {
                         Logger::info("      校验 ID: " + std::to_string(searchID.load()));
-                        auto performID = servo->performID(data);
+                        auto performID = performExtractID(data);
                         if (performID.first) {
                             int id = this->searchID.load();
                             int error = performID.second.second;

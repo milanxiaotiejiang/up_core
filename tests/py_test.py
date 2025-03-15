@@ -36,6 +36,8 @@ from up_core import Base
 
 from up_core import ServoManager
 
+from up_core import EEPROM
+
 logging.basicConfig(level=logging.DEBUG)
 
 up.set_log_level(LogLevel.INFO)  # 设置日志级别为 DEBUG

@@ -11,6 +11,7 @@
 #include <chrono>
 #include "servo_manager.h"
 #include "firmware_update.h"
+#include "servo_protocol_parse.h"
 
 int firmwareUpdate();
 
@@ -83,6 +84,62 @@ int main() {
 //        runServo(servo, servoProtocol);
 
 //        runMotor(servo, servoProtocol);
+
+        // 速度、温度、负载、电压、位置
+
+        // buildGetEepromData 读取 EEPROM 数据
+        // buildGetAngleLimit 读取角度限制
+        // buildGetMaxTemperature 读取最高温度上限
+        // buildGetVoltageRange 读取输入电压范围
+        // buildGetMaxTorque 读取最大扭矩
+        {
+            std::vector<uint8_t> cmd = servoProtocol.eeprom.buildGetEepromData(
+                    servo::EEPROM::MODEL_NUMBER_L,
+                    static_cast<int>(servo::EEPROM::EEPROM_COUNT) - static_cast<int>(servo::EEPROM::MODEL_NUMBER_L) - 1
+            );
+            Logger::info("发送命令：" + bytesToHex(cmd));
+            std::vector<uint8_t> response_data;
+            bool success = servo.sendWaitCommand(cmd, response_data);
+            if (success) {
+                success = servo.performSerialData(response_data);
+                if (success) {
+                    std::vector<uint8_t> payload(response_data.begin() + 5, response_data.end() - 1);
+                    servo::parseEEPROMData(payload);
+                }
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+        }
+
+        // buildGetRam 读取 RAM 数据
+        // buildGetLEDEnabled 读取 LED 状态
+        // buildGetGoalPosition 读取目标位置
+        // buildGetRunSpeed 读取运行速度
+        // buildGetAccelerationDeceleration 读取加碱速度
+        // buildGetPosition 读取当前位置
+        // buildGetSpeed 读取当前速度
+        // buildGetLoad 读取负载
+        // buildGetVoltage 读取电压
+        // buildGetTemperature 读取温度
+        {
+            std::vector<uint8_t> cmd = servoProtocol.ram.buildGetRamData(
+                    servo::RAM::TORQUE_ENABLE,
+                    static_cast<int>(servo::RAM::RAM_COUNT) - static_cast<int>(servo::RAM::TORQUE_ENABLE) - 1
+            );
+            Logger::info("发送命令：" + bytesToHex(cmd));
+            std::vector<uint8_t> response_data;
+            bool success = servo.sendWaitCommand(cmd, response_data);
+            if (success) {
+                success = servo.performSerialData(response_data);
+                if (success) {
+                    std::vector<uint8_t> payload(response_data.begin() + 5, response_data.end() - 1);
+                    auto map = servo::parseRAMData(payload);
+
+                    int speed = combineSpeed(map[servo::RAM::MOVING_SPEED_L], map[servo::RAM::MOVING_SPEED_H]);
+                    Logger::info("运行速度：" + std::to_string(speed));
+                }
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+        }
 
         servo.close();
     } catch (std::exception &e) {

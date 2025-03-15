@@ -249,6 +249,7 @@ namespace servo {
         STATUS_RETURN_LEVEL = 0x10,     // 16（0x10） 应答状态级别 读/写 2（0x02）
         ALARM_LED = 0x11,               // 17（0x11） LED闪烁 读/写 37（0x25）
         ALARM_SHUTDOWN = 0x12,          // 18（0x12） 卸载条件 读/写 4（0x04）
+        EEPROM_COUNT
     };
 
     class ServoEEPROM : public Base {
@@ -282,6 +283,9 @@ namespace servo {
         // 读取逆时针角度限制
         std::vector<uint8_t> buildGetCcwAngleLimit();
 
+        // 读取角度限制
+        std::vector<uint8_t> buildGetAngleLimit();
+
         // 设定角度限制
         std::vector<uint8_t> buildSetAngleLimit(uint16_t min_angle, uint16_t max_angle);
 
@@ -296,6 +300,9 @@ namespace servo {
 
         // 读取最高输入电压
         std::vector<uint8_t> buildGetMaxVoltage();
+
+        // 读取输入电压范围
+        std::vector<uint8_t> buildGetVoltageRange();
 
         // 设定电压范围
         std::vector<uint8_t> buildSetVoltageRange(float min_voltage, float max_voltage);
@@ -323,6 +330,9 @@ namespace servo {
 
         // 设定报警卸载条件
         std::vector<uint8_t> buildSetAlarmShutdown(AlarmShutdownConfig config);
+
+        // 读取指定长度的 Eeprom 数据
+        std::vector<uint8_t> buildGetEepromData(EEPROM eeprom, int length);
 
     };
 
@@ -353,6 +363,7 @@ namespace servo {
         LOCK = 0x2F,                    // 47（0x2F） 锁标志 读/写 0（0x00）
         MIN_PWM_L = 0x30,               // 48（0x30） 最小PWM(L) 读/写 90（0x5A）
         MIN_PWM_H = 0x31,               // 49（0x31） 最小PWM(H) 读/写 00（0x00）
+        RAM_COUNT
     };
 
     class ServoRAM : public Base {
@@ -403,6 +414,12 @@ namespace servo {
         // 设置舵机运行的加速度和减速度
         std::vector<uint8_t> buildSetAccelerationDeceleration(uint8_t acceleration, uint8_t deceleration);
 
+        // 读取目标位置
+        std::vector<uint8_t> buildGetGoalPosition();
+
+        // 读取运行速度
+        std::vector<uint8_t> buildGetRunSpeed();
+
         // 读取当前位置
         std::vector<uint8_t> buildGetPosition();
 
@@ -414,6 +431,9 @@ namespace servo {
 
         // 读取减速度
         std::vector<uint8_t> buildGetDeceleration();
+
+        // 读取加速度和减速度
+        std::vector<uint8_t> buildGetAccelerationDeceleration();
 
         // 读取当前负载
         std::vector<uint8_t> buildGetLoad();
@@ -442,6 +462,8 @@ namespace servo {
         // 读取最小PWM
         std::vector<uint8_t> buildGetMinPWM();
 
+        // 读取指定长度的 RAM 数据
+        std::vector<uint8_t> buildGetRamData(RAM ram, int length);
     };
 
 

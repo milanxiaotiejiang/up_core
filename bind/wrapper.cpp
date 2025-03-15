@@ -6,6 +6,7 @@
 #include "servo.h"
 #include "adc.h"
 #include "servo_manager.h"
+#include "servo_protocol_parse.h"
 #include <pybind11/stl.h>
 #include <pybind11/functional.h>
 
@@ -145,6 +146,7 @@ PYBIND11_MODULE(up_core, m) {
             .value("STATUS_RETURN_LEVEL", servo::EEPROM::STATUS_RETURN_LEVEL)
             .value("ALARM_LED", servo::EEPROM::ALARM_LED)
             .value("ALARM_SHUTDOWN", servo::EEPROM::ALARM_SHUTDOWN)
+            .value("EEPROM_COUNT", servo::EEPROM::EEPROM_COUNT)
             .export_values();
 
     // servo::RAM
@@ -174,6 +176,7 @@ PYBIND11_MODULE(up_core, m) {
             .value("LOCK", servo::RAM::LOCK)
             .value("MIN_PWM_L", servo::RAM::MIN_PWM_L)
             .value("MIN_PWM_H", servo::RAM::MIN_PWM_H)
+            .value("RAM_COUNT", servo::RAM::RAM_COUNT)
             .export_values();
 
     // servo::ServoError
@@ -228,6 +231,7 @@ PYBIND11_MODULE(up_core, m) {
                  "设置舵机返回数据的延迟时间（单位：微秒）")
             .def("buildGetCwAngleLimit", &servo::ServoEEPROM::buildGetCwAngleLimit, "读取顺时针角度限制")
             .def("buildGetCcwAngleLimit", &servo::ServoEEPROM::buildGetCcwAngleLimit, "读取逆时针角度限制")
+            .def("buildGetAngleLimit", &servo::ServoEEPROM::buildGetAngleLimit, "读取角度限制")
             .def("buildSetAngleLimit", &servo::ServoEEPROM::buildSetAngleLimit, py::arg("min_angle"),
                  py::arg("max_angle"),
                  "设定角度限制")
@@ -236,6 +240,7 @@ PYBIND11_MODULE(up_core, m) {
                  "设定最大温度")
             .def("buildGetMinVoltage", &servo::ServoEEPROM::buildGetMinVoltage, "读取最低输入电压")
             .def("buildGetMaxVoltage", &servo::ServoEEPROM::buildGetMaxVoltage, "读取最高输入电压")
+            .def("buildGetVoltageRange", &servo::ServoEEPROM::buildGetVoltageRange, "读取输入电压范围")
             .def("buildSetVoltageRange", &servo::ServoEEPROM::buildSetVoltageRange, py::arg("min_voltage"),
                  py::arg("max_voltage"), "设定电压范围")
             .def("buildGetMaxTorque", &servo::ServoEEPROM::buildGetMaxTorque, "读取最大扭矩")
@@ -247,7 +252,10 @@ PYBIND11_MODULE(up_core, m) {
             .def("buildSetAlarmLED", &servo::ServoEEPROM::buildSetAlarmLED, py::arg("config"), "设定 LED 报警")
             .def("buildGetAlarmShutdown", &servo::ServoEEPROM::buildGetAlarmShutdown, "读取卸载条件")
             .def("buildSetAlarmShutdown", &servo::ServoEEPROM::buildSetAlarmShutdown, py::arg("config"),
-                 "设定报警卸载条件");
+                 "设定报警卸载条件")
+            .def("buildGetEepromData", &servo::ServoEEPROM::buildGetEepromData, py::arg("eeprom"), py::arg("length"),
+                 "读取EEPROM数据");
+
 
     // servo::ServoRAM
     py::class_<servo::ServoRAM>(m, "ServoRAM")
@@ -269,10 +277,14 @@ PYBIND11_MODULE(up_core, m) {
             .def("buildActionCommand", &servo::ServoRAM::buildActionCommand, "REG_WRITE + ACTION")
             .def("buildSetAccelerationDeceleration", &servo::ServoRAM::buildSetAccelerationDeceleration,
                  py::arg("acceleration"), py::arg("deceleration"), "设置舵机运行的加速度和减速度")
+            .def("buildGetGoalPosition", &servo::ServoRAM::buildGetGoalPosition, "读取目标位置")
+            .def("buildGetRunSpeed", &servo::ServoRAM::buildGetRunSpeed, "读取运行速度")
             .def("buildGetPosition", &servo::ServoRAM::buildGetPosition, "读取当前位置")
             .def("buildGetSpeed", &servo::ServoRAM::buildGetSpeed, "读取当前速度")
             .def("buildGetAcceleration", &servo::ServoRAM::buildGetAcceleration, "读取加速度")
             .def("buildGetDeceleration", &servo::ServoRAM::buildGetDeceleration, "读取减速度")
+            .def("buildGetAccelerationDeceleration", &servo::ServoRAM::buildGetAccelerationDeceleration,
+                 "读取加速度和减速度")
             .def("buildGetLoad", &servo::ServoRAM::buildGetLoad, "读取当前负载")
             .def("buildGetVoltage", &servo::ServoRAM::buildGetVoltage, "读取当前电压")
             .def("buildGetTemperature", &servo::ServoRAM::buildGetTemperature, "读取当前温度")
@@ -281,7 +293,9 @@ PYBIND11_MODULE(up_core, m) {
             .def("buildSetLockFlag", &servo::ServoRAM::buildSetLockFlag, py::arg("lock"), "设置锁标志")
             .def("buildGetLockFlag", &servo::ServoRAM::buildGetLockFlag, "读取锁标志")
             .def("buildSetMinPWM", &servo::ServoRAM::buildSetMinPWM, py::arg("pwm"), "设置最小PWM")
-            .def("buildGetMinPWM", &servo::ServoRAM::buildGetMinPWM, "读取最小PWM");
+            .def("buildGetMinPWM", &servo::ServoRAM::buildGetMinPWM, "读取最小PWM")
+            .def("buildGetRamData", &servo::ServoRAM::buildGetRamData, py::arg("ram"), py::arg("length"),
+                 "读取 RAM 数据");
 
     py::class_<servo::Motor>(m, "Motor")
             .def(py::init<uint8_t>(), py::arg("id"), "构造 Motor 对象")
@@ -521,5 +535,15 @@ PYBIND11_MODULE(up_core, m) {
     m.def("rpmToSpeedRatio", &servo::rpmToSpeedRatio, py::arg("rpm"), "从 RPM 转换为速度比例");
 
     m.def("bytesToHex", &bytesToHex, py::arg("data"), "Convert bytes to hex string");
+    m.def("combineSpeed", &combineSpeed, py::arg("lowByte"), py::arg("highByte"),
+          "Combine low byte and high byte to speed");
+    m.def("previewSerialData", &previewSerialData, py::arg("packet"), "Preview serial data");
+    m.def("performExtractID", &performExtractID, py::arg("packet"), "Perform extract ID");
 
+    m.def("eePROMValue", &servo::eePROMValue, "Print EEPROM value", py::arg("eeprom"), py::arg("value"));
+    m.def("parseEEPROMData", &servo::parseEEPROMData, "Parse EEPROM data", py::arg("data"),
+          py::arg("start") = servo::EEPROM::MODEL_NUMBER_L);
+    m.def("ramValue", &servo::ramValue, "Print RAM value", py::arg("ram"), py::arg("value"));
+    m.def("parseRAMData", &servo::parseRAMData, "Parse RAM data", py::arg("data"),
+          py::arg("start") = servo::RAM::TORQUE_ENABLE);
 }

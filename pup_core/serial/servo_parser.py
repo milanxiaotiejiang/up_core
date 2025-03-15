@@ -54,7 +54,7 @@ def bytes_to_hex(byte_list: bytearray) -> str:
 
 
 # 解析串口数据包
-def perform_serial_data(packet: bytearray) -> Tuple[int, Optional[bytearray]]:
+def preview_data(packet: bytearray) -> Tuple[int, Optional[bytearray]]:
     """
     解析串口数据包，验证校验和并提取有效数据。
 

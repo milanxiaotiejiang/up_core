@@ -3,8 +3,8 @@
 //
 
 #include <sstream>
-#include <iomanip>
 #include "logger.h"
+#include "servo_protocol.h"
 
 // 初始化静态成员
 Logger::LogLevel Logger::logLevel_ = Logger::INFO;
@@ -64,13 +64,4 @@ const char *Logger::logLevelToString(Logger::LogLevel level) {
         default:
             return "UNKNOWN";
     }
-}
-
-std::string bytesToHex(const std::vector<uint8_t> &data) {
-    std::ostringstream oss;
-    oss << "📩 ";
-    for (uint8_t byte: data) {
-        oss << std::hex << std::setw(2) << std::setfill('0') << (int) byte << " ";
-    }
-    return oss.str();
 }

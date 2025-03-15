@@ -3,9 +3,14 @@ import asyncio
 
 import serial.serial_manager as sm
 import logging
-from up_core import ServoProtocol, ServoError
 
-from serial.servo_parser import perform_serial_data
+import up_core as up
+from up_core import ServoProtocol, ServoError
+from up_core import LogLevel
+from up_core import EEPROM
+from up_core import RAM
+
+from serial.servo_parser import preview_data
 
 # 创建 serial_manager 实例
 serial_manager = sm.SerialManager()
@@ -37,34 +42,42 @@ async def concurrencyTesting():
         # 并发发送1000次，间隔0.1秒，每次交替使用 `write_wait` 和 `write` 发送指令
         async def write_wait():
             for i in range(100):
-                data = servoProtocol.eeprom.buildGetSoftwareVersion()
+                cmd = servoProtocol.eeprom.buildGetEepromData(
+                    EEPROM.MODEL_NUMBER_L,
+                    int(EEPROM.EEPROM_COUNT) - int(EEPROM.MODEL_NUMBER_L) - 1
+                )
                 try:
-                    byte_buffer = await serial_manager.write_wait(serial_id, data)
-                    if byte_buffer:
-                        error_code, payload = perform_serial_data(byte_buffer)
+                    byte_array = await serial_manager.write_wait(serial_id, cmd)
+                    if byte_array:
+                        error_code, payload = preview_data(byte_array)
                         if error_code == ServoError.NO_ERROR:
-                            hex_string = byte_buffer.hex().upper()
-                            formatted_hex_string = ' '.join([hex_string[i:i + 2] for i in range(0, len(hex_string), 2)])
-                            logging.info(str(i) + " write_wait success: " + formatted_hex_string)
+                            logging.info("请求 EEPROM 数据成功")
+                            up.parseEEPROMData(data)
                         else:
-                            logging.warning(str(i) + " write_wait failed: error_code != NO_ERROR")
+                            logging.warning(f"请求 EEPROM 数据错误: {error_code}")
                     else:
-                        logging.warning(str(i) + " write_wait failed 2")
+                        logging.warning("请求 EEPROM 数据错误")
                 except Exception as e:
-                    logging.error(str(i) + " write_wait failed 3")
+                    logging.error("请求 EEPROM 数据失败 " + str(e))
                 await asyncio.sleep(0.01)
 
         async def write():
             for i in range(100):
-                data = servoProtocol.eeprom.buildGetID()
+                cmd = servoProtocol.ram.buildGetRamData(
+                    RAM.TORQUE_ENABLE,
+                    int(RAM.RAM_COUNT) - int(RAM.TORQUE_ENABLE) - 1
+                )
                 try:
-                    success = await serial_manager.write(serial_id, data)
-                    if success:
-                        logging.info(str(i) + " write success")
-                    else:
-                        logging.warning(str(i) + " write failed")
+                    byte_array = await serial_manager.write_wait(serial_id, cmd)
+                    if byte_array:
+                        error_code, payload = preview_data(byte_array)
+                        if error_code == ServoError.NO_ERROR:
+                            logging.info("请求 RAM 数据成功")
+                            up.parseRAMData(data)
+                        else:
+                            logging.warning(f"请求 RAM 数据错误: {error_code}")
                 except Exception as e:
-                    logging.error(str(i) + " write failed 2")
+                    logging.error("请求 RAM 数据失败失败 " + str(e))
                 await asyncio.sleep(0.01)
 
         # todo 2
@@ -80,6 +93,7 @@ async def concurrencyTesting():
 
 
 if __name__ == "__main__":
+    up.set_log_level(LogLevel.INFO)
     logging.basicConfig(level=logging.INFO)
     try:
         asyncio.run(concurrencyTesting())
