@@ -14,3 +14,9 @@ def identify_mode(byte_buffer: bytes):
         return True
 
     raise ValueError("无法识别的模式")
+
+
+def ram_data_serializer(obj):
+    if isinstance(obj, Enum):
+        return obj.name  # 或者 obj.value，根据需要选择返回名称或值
+    raise TypeError(f"Type {type(obj)} not serializable")

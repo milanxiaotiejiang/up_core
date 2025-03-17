@@ -11,11 +11,13 @@ from up_core import Base
 from ..dependencies import get_serial_manager
 from pup_core.exception.exceptions import handle_exceptions
 from ..model.request_models import HttpRequest, SerialRequest, OpenSerialRequest, WriteRequest, SearchIdRequest, \
-    AngleRequest
+    AngleRequest, LoadInfoRequest
 from ..model.response_models import SuccessResponse
 from ..model.response_models import ErrorResponse
 from pup_core.serial.servo_parser import preview_data, perform_version
 from pup_core.serial.servo_parser import ServoError
+from ..serial.load_info_controller import start_info_task, stop_all_info_tasks, stop_info_task_for_serial_id, \
+    stop_info_task
 from ..utils.resolve import identify_mode
 
 logger = logging.getLogger("serial_api")
@@ -140,6 +142,33 @@ async def mode(request: HttpRequest, serial_manager=Depends(get_serial_manager))
         return SuccessResponse(status=True, data=identify_mode(payload))
     else:
         return ErrorResponse(status=False, message="Parsing failed, servo error code: " + str(error_code))
+
+
+@router.post("/load_info/start")
+async def start_task(request: LoadInfoRequest, serial_manager=Depends(get_serial_manager)):
+    if serial_manager.is_open(request.serial_id):
+        await start_info_task(serial_manager, request.serial_id, request.protocol_id, request.interval)
+        return SuccessResponse(status=True, message="Task started.")
+    else:
+        return ErrorResponse(status=False, message="Serial port is not open.")
+
+
+@router.post("/load_info/stop/all")
+async def stop_task():
+    await stop_all_info_tasks()
+    return SuccessResponse(status=True, message="All tasks stopped.")
+
+
+@router.post("/load_info/stop/serial")
+async def stop_task(request: HttpRequest):
+    await stop_info_task_for_serial_id(request.serial_id)
+    return SuccessResponse(status=True, message="Task stopped.")
+
+
+@router.post("/load_info/stop")
+async def stop_task(request: HttpRequest):
+    await stop_info_task(request.serial_id, request.protocol_id)
+    return SuccessResponse(status=True, message="Task stopped.")
 
 
 def list_serial_ports():

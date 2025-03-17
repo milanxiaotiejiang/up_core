@@ -93,3 +93,7 @@ class SerialPort:
                 cs.close_serial(self.ser)
             except Exception as e:
                 logging.error(f"关闭串口时出错: {e}")
+
+    def is_open(self) -> bool:
+        """检查串口是否打开"""
+        return cs.is_open(self.ser)

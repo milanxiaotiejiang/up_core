@@ -535,8 +535,12 @@ PYBIND11_MODULE(up_core, m) {
     m.def("rpmToSpeedRatio", &servo::rpmToSpeedRatio, py::arg("rpm"), "从 RPM 转换为速度比例");
 
     m.def("bytesToHex", &bytesToHex, py::arg("data"), "Convert bytes to hex string");
+    m.def("singleByteToInt", &singleByteToInt, py::arg("byte"), "Convert single byte to int");
+    m.def("doubleByteToInt", &doubleByteToInt, py::arg("lowByte"), py::arg("highByte"), "Convert double byte to int");
     m.def("combineSpeed", &combineSpeed, py::arg("lowByte"), py::arg("highByte"),
           "Combine low byte and high byte to speed");
+    m.def("combinePosition", &combinePosition, py::arg("lowByte"), py::arg("highByte"),
+          "Combine low byte and high byte to position");
     m.def("previewSerialData", &previewSerialData, py::arg("packet"), "Preview serial data");
     m.def("performExtractID", &performExtractID, py::arg("packet"), "Perform extract ID");
 

@@ -39,3 +39,7 @@ class AngleRequest(HttpRequest):
 
 class MotorSpeedRequest(HttpRequest):
     rpm: Optional[confloat(ge=-62, le=62)] = 0  # 限制 rpm 在 1 到 32 之间
+
+
+class LoadInfoRequest(HttpRequest):
+    interval: Optional[int] = 1

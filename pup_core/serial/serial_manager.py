@@ -63,6 +63,11 @@ class SerialManager:
             raise PySerialException(UpErrorCode.SERIAL_NOT_FOUND, f"未找到串口 {serial_id}。")
         return serial_port
 
+    def is_open(self, serial_id: str) -> bool:
+        """检查串口是否打开"""
+        serial_port = self._get_serial_port(serial_id)
+        return serial_port.is_open()
+
     async def write(self, serial_id: str, data: bytes) -> bool:
         """向串口写入数据，不等待响应"""
         serial_port = self._get_serial_port(serial_id)
