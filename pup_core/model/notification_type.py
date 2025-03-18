@@ -3,3 +3,4 @@ class NotificationType:
     SearchId = 2
     EEPROMData = 3
     RAMData = 4
+    ServoError = 5

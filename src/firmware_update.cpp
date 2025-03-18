@@ -5,37 +5,30 @@
 #include <iostream>
 #include <fstream>
 #include <cstring>
+#include <iomanip>
 #include "firmware_update.h"
 
-void FirmwareUpdate::sendData(const std::string &fileName, int retryTimes) {
-    std::vector<uint8_t> buffer;
-    readFile(fileName, buffer);
+std::vector<std::vector<uint8_t>> FirmwareUpdate::textureBinArray(const std::string &fileName) {
+    std::vector<std::vector<uint8_t>> frames;
+
+    std::vector<uint8_t> fileBuffer;
+    readFile(fileName, fileBuffer);
 
     int packetNumber = 1;
-    size_t dataSize = buffer.size();
+    size_t dataSize = fileBuffer.size();
     size_t offset = 0;
 
     while (offset < dataSize) {
         std::vector<uint8_t> frame;
-        buildFrame(buffer, packetNumber, frame);
+        buildFrame(fileBuffer, packetNumber, frame);
 
-        bool success = false;
-        for (int i = 0; i < retryTimes; ++i) {
-            sendFrame(frame);
-            if (waitForResponse()) {
-                success = true;
-                break;
-            }
-        }
-
-        if (!success) {
-            std::cerr << "Failed to send frame after " << retryTimes << " retries." << std::endl;
-            return;
-        }
+        frames.push_back(frame);
 
         offset += 128;
         ++packetNumber;
     }
+
+    return frames;
 }
 
 void FirmwareUpdate::readFile(const std::string &fileName, std::vector<uint8_t> &buffer) {
@@ -78,17 +71,3 @@ uint16_t FirmwareUpdate::calculateCRC(const std::vector<uint8_t> &data) {
     return crc;
 }
 
-void FirmwareUpdate::sendFrame(const std::vector<uint8_t> &frame) {
-    // Implement the actual sending logic here
-    std::cout << "Sending frame: ";
-    for (uint8_t byte: frame) {
-        std::cout << std::hex << static_cast<int>(byte) << " ";
-    }
-    std::cout << std::dec << std::endl;
-}
-
-bool FirmwareUpdate::waitForResponse() {
-    // Implement the actual waiting logic here
-    // Simulate a successful response for this example
-    return true;
-}

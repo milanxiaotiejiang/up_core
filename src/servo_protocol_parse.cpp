@@ -71,7 +71,7 @@ bool previewSerialData(const std::vector<uint8_t> &packet) {
                         + " (" + errorInfo.description + ")");
     }
 
-    Logger::debug("✅ 接收到数据包: " + bytesToHex(payload));
+    Logger::info("✅ 接收到数据包: " + bytesToHex(payload));
 
     // 这里可以回调处理接收到的数据，例如存储 payload 供其他线程访问
     return errorInfo.error == servo::ServoError::NO_ERROR;

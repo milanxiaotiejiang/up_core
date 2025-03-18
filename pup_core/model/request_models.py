@@ -34,11 +34,11 @@ class WriteRequest(SerialRequest):
 
 class AngleRequest(HttpRequest):
     angle: Optional[confloat(ge=0, le=300)] = 0  # 限制 angle 在 0 到 300 之间
-    rpm: Optional[confloat(ge=1, le=32)] = 0  # 限制 rpm 在 1 到 32 之间
+    rpm: Optional[confloat(ge=1, le=62)] = 0
 
 
 class MotorSpeedRequest(HttpRequest):
-    rpm: Optional[confloat(ge=-62, le=62)] = 0  # 限制 rpm 在 1 到 32 之间
+    rpm: Optional[confloat(ge=-62, le=62)] = 0
 
 
 class LoadInfoRequest(HttpRequest):

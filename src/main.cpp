@@ -29,12 +29,11 @@ void runServo(Servo &servo, servo::ServoProtocol &servoProtocol);
 
 void runMotor(Servo &servo, servo::ServoProtocol &servoProtocol);
 
+void loadInfo(Servo &servo, servo::ServoProtocol &servoProtocol);
+
 int main() {
 
     Logger::setLogLevel(Logger::INFO);
-
-    // 固件升级
-//    return firmwareUpdate();
 
     // 搜索舵机 ID
 //    return searchServo();
@@ -69,6 +68,7 @@ int main() {
 
         sleep(1);
 
+
         // 获取版本
 //        getSoftwareVersion(servo);
 
@@ -86,66 +86,97 @@ int main() {
 //        runMotor(servo, servoProtocol);
 
         // 速度、温度、负载、电压、位置
+//        loadInfo(servo, servoProtocol);
 
-        // buildGetEepromData 读取 EEPROM 数据
-        // buildGetAngleLimit 读取角度限制
-        // buildGetMaxTemperature 读取最高温度上限
-        // buildGetVoltageRange 读取输入电压范围
-        // buildGetMaxTorque 读取最大扭矩
-        {
-            std::vector<uint8_t> cmd = servoProtocol.eeprom.buildGetEepromData(
-                    servo::EEPROM::MODEL_NUMBER_L,
-                    static_cast<int>(servo::EEPROM::EEPROM_COUNT) - static_cast<int>(servo::EEPROM::MODEL_NUMBER_L) - 1
-            );
-            Logger::info("发送命令：" + bytesToHex(cmd));
-            std::vector<uint8_t> response_data;
-            bool success = servo.sendWaitCommand(cmd, response_data);
-            if (success) {
-                success = servo.performSerialData(response_data);
-                if (success) {
-                    std::vector<uint8_t> payload(response_data.begin() + 5, response_data.end() - 1);
-                    servo::parseEEPROMData(payload);
-                }
-            }
-            std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+        const std::vector<uint8_t> &resetPacket = servoProtocol.buildResetPacket();
+        bool success = servo.sendCommand(resetPacket);
+        if (success) {
+            Logger::info("✅ 发送复位命令成功！");
+        } else {
+            Logger::error("❌ 发送复位命令失败！");
         }
 
-        // buildGetRam 读取 RAM 数据
-        // buildGetLEDEnabled 读取 LED 状态
-        // buildGetGoalPosition 读取目标位置
-        // buildGetRunSpeed 读取运行速度
-        // buildGetAccelerationDeceleration 读取加碱速度
-        // buildGetPosition 读取当前位置
-        // buildGetSpeed 读取当前速度
-        // buildGetLoad 读取负载
-        // buildGetVoltage 读取电压
-        // buildGetTemperature 读取温度
-        {
-            std::vector<uint8_t> cmd = servoProtocol.ram.buildGetRamData(
-                    servo::RAM::TORQUE_ENABLE,
-                    static_cast<int>(servo::RAM::RAM_COUNT) - static_cast<int>(servo::RAM::TORQUE_ENABLE) - 1
-            );
-            Logger::info("发送命令：" + bytesToHex(cmd));
-            std::vector<uint8_t> response_data;
-            bool success = servo.sendWaitCommand(cmd, response_data);
-            if (success) {
-                success = servo.performSerialData(response_data);
-                if (success) {
-                    std::vector<uint8_t> payload(response_data.begin() + 5, response_data.end() - 1);
-                    auto map = servo::parseRAMData(payload);
+        // 固件升级
+        FirmwareUpdate sender;
+        auto binArray = sender.textureBinArray("/home/noodles/CLionProjects/up_core/CDS5516_1.0.bin");
 
-                    int speed = combineSpeed(map[servo::RAM::MOVING_SPEED_L], map[servo::RAM::MOVING_SPEED_H]);
-                    Logger::info("运行速度：" + std::to_string(speed));
-                }
-            }
-            std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-        }
+//        success = servo.sendCommand({0x64});
+//        if (!success) {
+//            Logger::error("❌ 发送固件升级数据失败！");
+//        }
+
+//        for (auto &frame: binArray) {
+//            bool success = servo.sendCommand(frame);
+//            if (!success) {
+//                Logger::error("❌ 发送固件升级数据失败！");
+//                break;
+//            }
+//        }
+
+        firmwareUpdate();
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
         servo.close();
     } catch (std::exception &e) {
         std::cerr << e.what() << std::endl;
     }
 
+}
+
+void loadInfo(Servo &servo, servo::ServoProtocol &servoProtocol) {// buildGetEepromData 读取 EEPROM 数据
+// buildGetAngleLimit 读取角度限制
+// buildGetMaxTemperature 读取最高温度上限
+// buildGetVoltageRange 读取输入电压范围
+// buildGetMaxTorque 读取最大扭矩
+    {
+        std::vector<uint8_t> cmd = servoProtocol.eeprom.buildGetEepromData(
+                servo::EEPROM::MODEL_NUMBER_L,
+                static_cast<int>(servo::EEPROM::EEPROM_COUNT) - static_cast<int>(servo::EEPROM::MODEL_NUMBER_L) - 1
+        );
+        Logger::info("发送命令：" + bytesToHex(cmd));
+        std::vector<uint8_t> response_data;
+        bool success = servo.sendWaitCommand(cmd, response_data);
+        if (success) {
+            success = servo.performSerialData(response_data);
+            if (success) {
+                std::vector<uint8_t> payload(response_data.begin() + 5, response_data.end() - 1);
+                servo::parseEEPROMData(payload);
+            }
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+    }
+
+    // buildGetRam 读取 RAM 数据
+// buildGetLEDEnabled 读取 LED 状态
+// buildGetGoalPosition 读取目标位置
+// buildGetRunSpeed 读取运行速度
+// buildGetAccelerationDeceleration 读取加碱速度
+// buildGetPosition 读取当前位置
+// buildGetSpeed 读取当前速度
+// buildGetLoad 读取负载
+// buildGetVoltage 读取电压
+// buildGetTemperature 读取温度
+    {
+        std::vector<uint8_t> cmd = servoProtocol.ram.buildGetRamData(
+                servo::RAM::TORQUE_ENABLE,
+                static_cast<int>(servo::RAM::RAM_COUNT) - static_cast<int>(servo::RAM::TORQUE_ENABLE) - 1
+        );
+        Logger::info("发送命令：" + bytesToHex(cmd));
+        std::vector<uint8_t> response_data;
+        bool success = servo.sendWaitCommand(cmd, response_data);
+        if (success) {
+            success = servo.performSerialData(response_data);
+            if (success) {
+                std::vector<uint8_t> payload(response_data.begin() + 5, response_data.end() - 1);
+                auto map = servo::parseRAMData(payload);
+
+                int speed = combineSpeed(map[servo::RAM::MOVING_SPEED_L], map[servo::RAM::MOVING_SPEED_H]);
+                Logger::info("运行速度：" + std::to_string(speed));
+            }
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+    }
 }
 
 void runMotor(Servo &servo, servo::ServoProtocol &servoProtocol) {
@@ -345,11 +376,5 @@ int searchServo() {
 }
 
 int firmwareUpdate() {
-    FirmwareUpdate sender;
-    try {
-        sender.sendData("example.bin", 3);
-    } catch (const std::exception &e) {
-        std::cerr << e.what() << std::endl;
-    }
-    return 0;
+
 }

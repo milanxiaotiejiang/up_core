@@ -7,7 +7,8 @@ import up_core as serial
 from . import c_serial as cs
 from pup_core.model.up_core import UpErrorCode
 from pup_core.model.up_exception import PySerialException
-from pup_core.signals import error_signal
+from pup_core.signals import error_signal, servo_error_signal
+from .servo_parser import preview_data, ServoError
 
 
 class CommandResult(NamedTuple):
@@ -66,6 +67,9 @@ class SerialPort:
                 if available_bytes > 0:
                     buffer, bytes_read = self.ser.read(available_bytes)
                     byte_buffer = bytearray(buffer)
+
+                    error_code, payload = preview_data(byte_buffer)
+                    await servo_error_signal.send_async("servo_error", serial_id=serial_id, error_code=error_code)
 
                     await self.enqueue_data(byte_buffer)
                     await self.respond(byte_buffer)  # 立即响应等待的数据

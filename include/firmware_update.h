@@ -11,18 +11,15 @@
 
 class FirmwareUpdate {
 public:
-    void sendData(const std::string &fileName, int retryTimes);
+    std::vector<std::vector<uint8_t>> textureBinArray(const std::string &fileName);
 
 private:
-    void readFile(const std::string &fileName, std::vector<uint8_t> &buffer);
+    static void readFile(const std::string &fileName, std::vector<uint8_t> &buffer);
 
     void buildFrame(const std::vector<uint8_t> &data, int packetNumber, std::vector<uint8_t> &frame);
 
     uint16_t calculateCRC(const std::vector<uint8_t> &data);
 
-    void sendFrame(const std::vector<uint8_t> &frame);
-
-    bool waitForResponse();
 };
 
 

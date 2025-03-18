@@ -89,7 +89,7 @@ def preview_data(packet: bytearray) -> Tuple[int, Optional[bytearray]]:
         logging.warning(f"⚠️ 舵机 {packet_id} 返回错误: {error_code} ({error_description})")
         return error_code, None  # 返回具体的错误码
 
-    logging.info(f"✅ 接收到数据包: {bytes_to_hex(packet)}")
+    # logging.info(f"✅ 接收到数据包: {bytes_to_hex(packet)}")
 
     # 返回有效负载
     return ServoError.NO_ERROR, payload

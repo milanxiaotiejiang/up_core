@@ -9,7 +9,7 @@ from pup_core.model.RAMData import RAMData
 from pup_core.model.notification_type import NotificationType
 from pup_core.proto import Notification
 
-from pup_core.signals import error_signal, search_signal, eeprom_signal, ram_signal
+from pup_core.signals import error_signal, search_signal, eeprom_signal, ram_signal, servo_error_signal
 
 logger = logging.getLogger("notifications")
 
@@ -63,7 +63,6 @@ async def notify_eeprom_data_clients(serial_id: str, eeprom_data: EEPROMData):
             "eeprom_data": eeprom_data_dict
         }).encode('utf-8')
 
-        # 发送通知
         await notify_clients(notification)
 
 
@@ -80,7 +79,15 @@ async def notify_ram_data_clients(serial_id: str, ram_data: RAMData):
             "ram_data": ram_data_dict
         }).encode('utf-8')
 
-        # 发送通知
+        await notify_clients(notification)
+
+
+async def notify_servo_error_clients(serial_id: str, error_code: int):
+    if clients:
+        notification = Notification()
+        notification.type = NotificationType.ServoError
+        notification.message = json.dumps({"serial_id": serial_id, "error_code": error_code}).encode('utf-8')
+
         await notify_clients(notification)
 
 
@@ -114,6 +121,11 @@ async def websocket_notifications(websocket: WebSocket):
 
     ram_signal.connect(ram_signal_handler)
 
+    async def servo_error_signal_handler(sender, serial_id, error_code):
+        await notify_servo_error_clients(serial_id, error_code)
+
+    servo_error_signal.connect(servo_error_signal_handler)
+
     try:
         while True:
             # 接收二进制数据
@@ -136,3 +148,4 @@ async def websocket_notifications(websocket: WebSocket):
         search_signal.disconnect(search_signal_handler)
         eeprom_signal.disconnect(eeprom_signal_handler)
         ram_signal.disconnect(ram_signal_handler)
+        servo_error_signal.disconnect(servo_error_signal_handler)
