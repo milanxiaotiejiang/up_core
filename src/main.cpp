@@ -33,7 +33,7 @@ void reset(Servo &servo, servo::ServoProtocol &servoProtocol);
 
 int main() {
 
-    Logger::setLogLevel(Logger::DEBUG);
+    Logger::setLogLevel(Logger::INFO);
 
     // 搜索舵机 ID
 //    return searchServo();
@@ -95,40 +95,7 @@ int main() {
 
         // 固件升级
         FirmwareUpdate sender;
-
-        {
-
-
-            auto binArray = sender.textureBinArray("/home/noodles/CLionProjects/up_core/file/CDS5516_1.0.bin");
-
-
-            bool ref;
-
-            for (int i = 0; i < 100; ++i) {
-
-                ref = sender.bootloader(0x01);
-                if (!ref) {
-                    continue;
-                }
-
-                ref = sender.firmware_upgrade();
-                if (!ref) {
-                    continue;
-                }
-
-                ref = sender.firmwareUpdate(binArray);
-                if (!ref) {
-//                    continue;
-                    break;
-                }
-
-                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-            }
-
-
-            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        }
-
+        sender.upgrade("/dev/ttyUSB0", 1000000, "/home/noodles/CLionProjects/up_core/file/CDS5516_1.0.bin");
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 

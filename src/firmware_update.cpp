@@ -14,6 +14,51 @@
 #include "logger.h"
 #include "servo_protocol_parse.h"
 
+bool FirmwareUpdate::upgrade(std::string port, uint32_t current_baud_rate, std::string bin_path,
+                             int total_retry, int handshake_count, int fire_ware_frame_retry, int wave_sign_retry) {
+
+    this->port = port;
+    this->current_baud_rate = current_baud_rate;
+    this->handshake_count = handshake_count;
+    this->fire_ware_frame_retry = fire_ware_frame_retry;
+    this->wave_sign_retry = wave_sign_retry;
+
+    auto binArray = textureBinArray(bin_path);
+
+    bool ref;
+
+    for (int i = 0; i < total_retry; ++i) {
+
+        ref = bootloader(0x01);
+        if (!ref) {
+            Logger::error("❌ Bootloader 启动失败，重试中...");
+            continue;
+        }
+
+        ref = firmware_upgrade();
+        if (!ref) {
+            Logger::error("❌ 固件升级失败，重试中...");
+            continue;
+        }
+
+        ref = firmwareUpdate(binArray);
+        if (!ref) {
+            Logger::error("❌ 固件更新失败，重试中...");
+            continue;
+        }
+
+        ref = wave();
+        if (!ref) {
+            Logger::error("❌ 发送结束标志失败，重试中...");
+            continue;
+        }
+
+        Logger::info("✅ 固件更新流程完成！");
+        break;  // 所有步骤成功完成，跳出循环
+    }
+
+    return ref;
+}
 
 std::vector<std::vector<uint8_t>> FirmwareUpdate::textureBinArray(const std::string &fileName) {
     std::vector<std::vector<uint8_t>> frames;
@@ -42,7 +87,7 @@ bool FirmwareUpdate::bootloader(uint8_t id) {
 
     servo::ServoProtocol protocol(id);
 
-    serial::Serial serial("/dev/ttyUSB0", 1000000, serial::Timeout::simpleTimeout(1000));
+    serial::Serial serial(port, current_baud_rate, serial::Timeout::simpleTimeout(1000));
 
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
@@ -75,8 +120,7 @@ bool FirmwareUpdate::bootloader(uint8_t id) {
 
 bool FirmwareUpdate::firmware_upgrade() {
 
-//    serial::Serial serial("/dev/ttyUSB0", 9600, serial::Timeout::simpleTimeout(1000));
-    upgradeSerial = std::make_shared<serial::Serial>("/dev/ttyUSB0", 9600, serial::Timeout::simpleTimeout(1000));
+    upgradeSerial = std::make_shared<serial::Serial>(port, 9600, serial::Timeout::simpleTimeout(1000));
 
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
@@ -106,7 +150,7 @@ bool FirmwareUpdate::firmware_upgrade() {
 
                     Logger::debug(oss.str());
 
-                    if (read_data[0] == 0x43) {
+                    if (read_data[0] == handshake_sign) {
                         // 读取成功，更新计数
                         {
                             std::lock_guard<std::mutex> lock(mtx);
@@ -139,8 +183,8 @@ bool FirmwareUpdate::firmware_upgrade() {
 
             upgradeSerial->flushInput();
 
-            uint8_t data[] = {0x64};  // 创建一个包含 0x64 的数组
-            size_t size = sizeof(data);  // 数组的大小
+            uint8_t data[] = {request_sing};
+            size_t size = sizeof(data);
 
             size_t write_size = upgradeSerial->write(data, size);
             bool success = write_size == size;
@@ -166,7 +210,7 @@ bool FirmwareUpdate::firmware_upgrade() {
 
     // 主线程等待结果
     std::unique_lock<std::mutex> lock(mtx);
-    cv.wait(lock, [this] { return read_count >= 5 || write_finished; });
+    cv.wait(lock, [this] { return read_count >= handshake_count || write_finished; });
 
     stop_writing = true;  // 确保写入线程能够退出
     stop_reading = true;  // 确保读取线程能够退出
@@ -201,7 +245,7 @@ bool FirmwareUpdate::firmwareUpdate(std::vector<std::vector<uint8_t>> binArray) 
     stop_receive = false;
 
     std::thread receive_thread = std::thread([this] {
-        while (stop_receive) {
+        while (!stop_receive) {
             size_t available_bytes = upgradeSerial->available();
 
             if (available_bytes > 0) {
@@ -217,7 +261,7 @@ bool FirmwareUpdate::firmwareUpdate(std::vector<std::vector<uint8_t>> binArray) 
                     }
                     oss << std::dec;
 
-                    Logger::info(oss.str());
+                    Logger::debug(oss.str());
 
                     uint32_t received_message_id = message_counter;
 
@@ -242,39 +286,36 @@ bool FirmwareUpdate::firmwareUpdate(std::vector<std::vector<uint8_t>> binArray) 
     });
 
     bool success = false;
-    int retry = 0;
+    int retry;
 
     for (int i = 0; i < binArray.size(); ++i) {
 
-        bool ref = false;
+        bool ref;
         retry = 0;
 
         auto frame = binArray[i];
 
-        ref = sendFrame(frame);
-
-        while (retry < 5) {
+        while (retry < fire_ware_frame_retry) {
             ref = sendFrame(frame);
 
             if (ref) {
-                Logger::info("发送第 " + std::to_string(i) + " 数据包成功！");
+                Logger::debug("发送第 " + std::to_string(i) + " 数据包成功！");
+
+                if (i == binArray.size() - 1) {
+                    success = true;
+                }
                 break;  // 发送成功，跳出重试循环
             } else {
                 Logger::error("❌ 发送第 " + std::to_string(i) + " 数据包失败！");
 
                 // 增加重试次数
                 ++retry;
-                if (retry < 5) {
-                    Logger::info("重试发送第 " + std::to_string(i) + " 数据包！");
-                } else {
-                    Logger::error("❌ 重试次数超限，放弃发送第 " + std::to_string(i) + " 数据包！");
-                }
             }
 
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
 
-        // 如果失败超过 5 次，退出循环
+        // 如果失败超过 fire_ware_frame_retry 次，退出循环
         if (!ref) {
             Logger::error("❌ 第 " + std::to_string(i) + " 数据包发送失败，跳过该数据包");
             break;
@@ -287,6 +328,41 @@ bool FirmwareUpdate::firmwareUpdate(std::vector<std::vector<uint8_t>> binArray) 
     stop_receive = true;
     if (receive_thread.joinable()) {
         receive_thread.join();
+    }
+
+    return success;
+}
+
+bool FirmwareUpdate::wave() {
+
+    bool success;
+    int retry = 0;
+
+    while (retry < wave_sign_retry) {
+        upgradeSerial->flushInput();
+
+        uint8_t data[] = {wave_sign};
+        size_t size = sizeof(data);
+
+        size_t write_size = upgradeSerial->write(data, size);
+        success = write_size == size;
+
+        if (success) {
+            Logger::debug("✅ 发送结束标志成功！");
+            break;
+        } else {
+            Logger::error("❌ 发送结束标志失败！");
+
+            retry++;
+            Logger::debug("重试第 " + std::to_string(retry) + " 次...");
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+
+        }
+    }
+
+    if (!success) {
+        Logger::error("❌ 发送结束标志失败，已重试 " + std::to_string(wave_sign_retry) + " 次！");
     }
 
     return success;

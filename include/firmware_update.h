@@ -13,15 +13,22 @@
 
 class FirmwareUpdate {
 public:
-    std::vector<std::vector<uint8_t>> textureBinArray(const std::string &fileName);
 
-    bool bootloader(uint8_t id);
-
-    bool firmware_upgrade();
-
-    bool firmwareUpdate(std::vector<std::vector<uint8_t>> binArray);
+    bool upgrade(std::string port,
+                 uint32_t current_baud_rate,
+                 std::string bin_path,
+                 int total_retry = 10,
+                 int handshake_count = 5,
+                 int fire_ware_frame_retry = 5,
+                 int wave_sign_retry = 5);
 
 private:
+    std::string port;
+    int current_baud_rate;
+
+    int handshake_count{5};
+    int fire_ware_frame_retry{5};
+    int wave_sign_retry{5};
 
     std::shared_ptr<serial::Serial> upgradeSerial;
 
@@ -34,6 +41,9 @@ private:
 
     const int write_iteration = 10;
     const int read_iteration = 3;
+    const u_int8_t request_sing = 0x64;
+    const u_int8_t handshake_sign = 0x43;
+    const u_int8_t wave_sign = 0x04;
 
 
     std::atomic<bool> stop_receive{false};
@@ -46,6 +56,16 @@ private:
     uint32_t generateMessageId() {
         return ++message_counter;  // 简单的递增 ID 生成策略
     }
+
+    std::vector<std::vector<uint8_t>> textureBinArray(const std::string &fileName);
+
+    bool bootloader(uint8_t id);
+
+    bool firmware_upgrade();
+
+    bool firmwareUpdate(std::vector<std::vector<uint8_t>> binArray);
+
+    bool wave();
 
     bool sendFrame(const std::vector<uint8_t> &frame);
 
