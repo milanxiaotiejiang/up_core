@@ -13,8 +13,6 @@
 #include "firmware_update.h"
 #include "servo_protocol_parse.h"
 
-int firmwareUpdate();
-
 int searchServo();
 
 void listPorts();
@@ -31,9 +29,11 @@ void runMotor(Servo &servo, servo::ServoProtocol &servoProtocol);
 
 void loadInfo(Servo &servo, servo::ServoProtocol &servoProtocol);
 
+void reset(Servo &servo, servo::ServoProtocol &servoProtocol);
+
 int main() {
 
-    Logger::setLogLevel(Logger::INFO);
+    Logger::setLogLevel(Logger::DEBUG);
 
     // 搜索舵机 ID
 //    return searchServo();
@@ -88,32 +88,47 @@ int main() {
         // 速度、温度、负载、电压、位置
 //        loadInfo(servo, servoProtocol);
 
-        const std::vector<uint8_t> &resetPacket = servoProtocol.buildResetPacket();
-        bool success = servo.sendCommand(resetPacket);
-        if (success) {
-            Logger::info("✅ 发送复位命令成功！");
-        } else {
-            Logger::error("❌ 发送复位命令失败！");
-        }
+        reset(servo, servoProtocol);
+
+        servo.close();
+
 
         // 固件升级
         FirmwareUpdate sender;
-        auto binArray = sender.textureBinArray("/home/noodles/CLionProjects/up_core/CDS5516_1.0.bin");
 
-//        success = servo.sendCommand({0x64});
-//        if (!success) {
-//            Logger::error("❌ 发送固件升级数据失败！");
-//        }
+        {
 
-//        for (auto &frame: binArray) {
-//            bool success = servo.sendCommand(frame);
-//            if (!success) {
-//                Logger::error("❌ 发送固件升级数据失败！");
-//                break;
-//            }
-//        }
 
-        firmwareUpdate();
+            auto binArray = sender.textureBinArray("/home/noodles/CLionProjects/up_core/file/CDS5516_1.0.bin");
+
+
+            bool ref;
+
+            for (int i = 0; i < 100; ++i) {
+
+                ref = sender.bootloader(0x01);
+                if (!ref) {
+                    continue;
+                }
+
+                ref = sender.firmware_upgrade();
+                if (!ref) {
+                    continue;
+                }
+
+                ref = sender.firmwareUpdate(binArray);
+                if (!ref) {
+//                    continue;
+                    break;
+                }
+
+                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+            }
+
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        }
+
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
@@ -121,6 +136,21 @@ int main() {
     } catch (std::exception &e) {
         std::cerr << e.what() << std::endl;
     }
+
+}
+
+void reset(Servo &servo, servo::ServoProtocol &servoProtocol) {
+    // ff ff 01 02 06 f6
+    const std::vector<uint8_t> &resetPacket = servoProtocol.buildResetPacket();
+    Logger::info("发送复位命令：" + bytesToHex(resetPacket));
+
+    bool success = servo.sendCommand(resetPacket);
+    if (success) {
+        Logger::info("✅ 发送复位命令成功！");
+    } else {
+        Logger::error("❌ 发送复位命令失败！");
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
 }
 
@@ -375,6 +405,3 @@ int searchServo() {
     return 0;
 }
 
-int firmwareUpdate() {
-
-}

@@ -214,6 +214,7 @@ PYBIND11_MODULE(up_core, m) {
             .def("buildRegWritePacket", &servo::Base::buildRegWritePacket, py::arg("address"), py::arg("data"))
             .def("buildActionPacket", &servo::Base::buildActionPacket)
             .def("buildResetPacket", &servo::Base::buildResetPacket)
+            .def("buildResetBootLoader", &servo::Base::buildResetBootLoader)
             .def("buildSyncWritePacket", &servo::Base::buildSyncWritePacket, py::arg("address"),
                  py::arg("write_length"), py::arg("protocols"), py::arg("func"));
 

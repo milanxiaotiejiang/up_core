@@ -255,4 +255,6 @@ void Servo::processSerialData() {
         // 避免 CPU 过载
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
+
+    Logger::debug("❌ 串口监听线程已停止！");
 }

@@ -77,6 +77,7 @@ namespace servo {
         REG_WRITE = 0x04,               // 4（0x04） REG WRITE 类似于WRITE DATA，但是控制字符写入后并不马上动作，直到ACTION指令到达
         ACTION = 0x05,                  // 5（0x05） ACTION 触发REG WRITE指令
         RESET = 0x06,                   // 6（0x06） 复位舵机
+        BOOTLOADER = 0x07,                   // 7（0x07） 复位到 bootloader 模式
         SYNC_WRITE = 0x83,              // 131（0x83） 同步写
     };
 
@@ -199,6 +200,8 @@ namespace servo {
          */
         std::vector<uint8_t> buildResetPacket();
 
+        std::vector<uint8_t> buildResetBootLoader();
+
         /**
          * SYNC WRITE
          *
@@ -224,7 +227,7 @@ namespace servo {
          */
         std::vector<uint8_t>
         buildSyncWritePacket(uint8_t address, int write_length, std::vector<ServoProtocol> &protocols,
-                             std::function<std::vector<uint8_t>(ServoProtocol &data, int position)> func);
+                             const std::function<std::vector<uint8_t>(ServoProtocol &data, int position)> &func);
 
 
     };

@@ -70,7 +70,8 @@ namespace servo {
 
         // 数据长度 = 参数数量 + 2 + 指令(1)
         uint8_t length = static_cast<uint8_t>(data.size() + 2);
-        if (!(command == ORDER::ACTION || command == ORDER::PING)) {  // ACTION、PING 指令不需要地址
+        if (!(command == ORDER::ACTION || command == ORDER::PING || command == ORDER::RESET ||
+              command == ORDER::BOOTLOADER)) {  // ACTION、PING 指令不需要地址
             length += 1;
         }
         packet.push_back(length);
@@ -120,9 +121,13 @@ namespace servo {
         return buildCommandPacket(ORDER::RESET, 0x00, {});
     }
 
+    std::vector<uint8_t> Base::buildResetBootLoader() {
+        return buildCommandPacket(ORDER::BOOTLOADER, 0x00, {});
+    }
+
     std::vector<uint8_t>
     Base::buildSyncWritePacket(uint8_t address, int write_length, std::vector<ServoProtocol> &protocols,
-                               std::function<std::vector<uint8_t>(ServoProtocol &data, int position)> func) {
+                               const std::function<std::vector<uint8_t>(ServoProtocol &data, int position)> &func) {
 
         std::vector<uint8_t> packet;
 
