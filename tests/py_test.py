@@ -36,7 +36,7 @@ from up_core import Base
 
 from up_core import ServoManager
 
-from up_core import EEPROM
+from up_core import FirmwareUpdate
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -50,3 +50,5 @@ up.system("ls")
 servoProtocol = Base(0)
 data = servoProtocol.buildResetPacket()
 print(issubclass(up.SerialException, Exception))  # True
+
+

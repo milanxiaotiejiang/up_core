@@ -33,7 +33,7 @@ void reset(Servo &servo, servo::ServoProtocol &servoProtocol);
 
 int main() {
 
-    Logger::setLogLevel(Logger::INFO);
+    Logger::setLogLevel(Logger::DEBUG);
 
     // 搜索舵机 ID
 //    return searchServo();

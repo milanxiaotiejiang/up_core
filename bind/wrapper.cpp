@@ -7,6 +7,7 @@
 #include "adc.h"
 #include "servo_manager.h"
 #include "servo_protocol_parse.h"
+#include "firmware_update.h"
 #include <pybind11/stl.h>
 #include <pybind11/functional.h>
 
@@ -551,4 +552,17 @@ PYBIND11_MODULE(up_core, m) {
     m.def("ramValue", &servo::ramValue, "Print RAM value", py::arg("ram"), py::arg("value"));
     m.def("parseRAMData", &servo::parseRAMData, "Parse RAM data", py::arg("data"),
           py::arg("start") = servo::RAM::TORQUE_ENABLE);
+
+    py::class_<FirmwareUpdate>(m, "FirmwareUpdate")
+            .def(py::init<>())  // 绑定构造函数
+                    // 绑定 upgrade 方法，并支持默认参数
+            .def("upgrade", &FirmwareUpdate::upgrade,
+                 py::arg("port_input"),
+                 py::arg("baud_rate"),
+                 py::arg("bin_path"),
+                 py::arg("total_retry") = 10,
+                 py::arg("handshake_threshold") = 5,
+                 py::arg("frame_retry_count") = 5,
+                 py::arg("sign_retry_count") = 5,
+                 "升级固件的方法");  // 方法的文档字符串
 }
