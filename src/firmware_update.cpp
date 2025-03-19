@@ -57,12 +57,12 @@ bool FirmwareUpdate::upgrade(std::string port_input, int baud_rate, const std::s
     } catch (const std::exception &e) {
         // 捕获并处理标准异常，记录具体错误信息
         // e.what() 返回异常的描述信息
-        Logger::error("❌ 读取固件文件失败：" + std::string(e.what()));
+        Logger::error("1 ❌ 读取固件文件失败：" + std::string(e.what()));
         return false;
     } catch (...) {
         // 捕获所有其他类型的异常，记录一般性错误信息
         // 这是一个安全保障措施，确保即使出现未预期的异常也不会导致程序崩溃
-        Logger::error("❌ 读取固件文件失败：未知错误");
+        Logger::error("1 ❌ 读取固件文件失败：未知错误");
         return false;
     }
 
@@ -79,7 +79,8 @@ bool FirmwareUpdate::upgrade(std::string port_input, int baud_rate, const std::s
         ref = bootloader(0x01);
         if (!ref) {
             // Bootloader 启动失败，记录错误并继续下一次重试
-            Logger::error("❌ Bootloader 启动失败，重试中...");
+            Logger::error("2 ❌ Bootloader 启动失败，重试中...");
+            std::this_thread::sleep_for(std::chrono::milliseconds(2000));
             continue;  // 跳过当前循环的剩余部分，直接开始下一次重试
         }
 
@@ -88,7 +89,8 @@ bool FirmwareUpdate::upgrade(std::string port_input, int baud_rate, const std::s
         ref = firmware_upgrade();
         if (!ref) {
             // 握手失败，记录错误并继续下一次重试
-            Logger::error("❌ 固件升级失败，重试中...");
+            Logger::error("3 ❌ 固件升级失败，重试中...");
+            std::this_thread::sleep_for(std::chrono::milliseconds(2000));
             continue;
         }
 
@@ -97,7 +99,8 @@ bool FirmwareUpdate::upgrade(std::string port_input, int baud_rate, const std::s
         ref = firmwareUpdate(binArray);
         if (!ref) {
             // 固件数据传输失败，记录错误并继续下一次重试
-            Logger::error("❌ 固件更新失败，重试中...");
+            Logger::error("4 ❌ 固件更新失败，重试中...");
+            std::this_thread::sleep_for(std::chrono::milliseconds(2000));
             continue;
         }
 
@@ -106,7 +109,8 @@ bool FirmwareUpdate::upgrade(std::string port_input, int baud_rate, const std::s
         ref = wave();
         if (!ref) {
             // 发送结束标志失败，记录错误并继续下一次重试
-            Logger::error("❌ 发送结束标志失败，重试中...");
+            Logger::error("5 ❌ 发送结束标志失败，重试中...");
+            std::this_thread::sleep_for(std::chrono::milliseconds(2000));
             continue;
         }
 
@@ -124,7 +128,7 @@ bool FirmwareUpdate::upgrade(std::string port_input, int baud_rate, const std::s
 }
 
 std::vector<std::vector<uint8_t>> FirmwareUpdate::textureBinArray(const std::string &fileName) {
-    Logger::info("开始读取固件文件：" + fileName);
+    Logger::info("1 开始读取固件文件：" + fileName);
 
     // 创建一个二维数组用于存储分解后的数据帧
     // 每个元素是一个 vector<uint8_t>，代表一个完整的固件数据帧
@@ -149,7 +153,7 @@ std::vector<std::vector<uint8_t>> FirmwareUpdate::textureBinArray(const std::str
     // 该偏移量用于追踪当前处理到的文件位置
     size_t offset = 0;
 
-    Logger::info("固件文件大小：" + std::to_string(dataSize) + " 字节");
+    Logger::info("1 固件文件大小：" + std::to_string(dataSize) + " 字节");
 
     // 循环处理文件内容，每次处理 128 字节，直到处理完整个文件
     // 固件升级协议规定每个数据帧包含 128 字节的有效数据
@@ -176,7 +180,7 @@ std::vector<std::vector<uint8_t>> FirmwareUpdate::textureBinArray(const std::str
         ++packetNumber;
     }
 
-    Logger::info("固件文件分包完成，共 " + std::to_string(frames.size()) + " 个数据帧");
+    Logger::info("1 固件文件分包完成，共 " + std::to_string(frames.size()) + " 个数据帧");
 
     // 返回包含所有数据帧的列表
     // 调用方将使用这些帧按顺序发送给设备完成固件升级
@@ -202,7 +206,7 @@ bool FirmwareUpdate::bootloader(uint8_t id) {
     // buildResetBootLoader() 是 ServoProtocol 类中的方法，用于生成特定的复位命令
     auto resetPacket = protocol.buildResetBootLoader();
     // 注释掉的调试日志，显示发送命令的十六进制表示
-    Logger::debug("发送复位到 bootloader 模式命令：" + bytesToHex(resetPacket));
+    Logger::debug("2 发送复位到 bootloader 模式命令：" + bytesToHex(resetPacket));
 
     // 清空串口输入缓冲区，确保后续读取的是最新的响应数据
     // 这样可以避免之前可能残留在缓冲区中的数据干扰当前操作
@@ -218,8 +222,8 @@ bool FirmwareUpdate::bootloader(uint8_t id) {
     // 如果写入的字节数不等于数据包大小，表示发送过程中出现错误
     if (bytes_written != resetPacket.size()) {
         // 记录错误信息，包含预期写入和实际写入的字节数
-        Logger::error("sendCommand: Failed to write full frame. Expected: "
-                      + std::to_string(resetPacket.size()) + ", Written: " + std::to_string(bytes_written));
+        Logger::error("2 ❌ 发送数据失败，预期写入 " + std::to_string(resetPacket.size()) + " 字节，实际写入 " +
+                      std::to_string(bytes_written) + " 字节");
         return false;  // 返回失败结果
     }
 
@@ -231,10 +235,10 @@ bool FirmwareUpdate::bootloader(uint8_t id) {
     // 根据等待结果输出相应的日志信息
     if (success) {
         // 成功收到响应，操作完成
-        Logger::debug("✅ 发送复位到 bootloader 模式命令成功！");
+        Logger::debug("2 ✅ 发送复位到 bootloader 模式命令成功！");
     } else {
         // 等待超时，未收到响应
-        Logger::error("❌ 发送复位到 bootloader 模式命令失败！");
+        Logger::error("2 ❌ 发送复位到 bootloader 模式命令失败！");
     }
 
     // 再次短暂延时 10 毫秒，确保所有通信操作完成
@@ -277,7 +281,7 @@ bool FirmwareUpdate::firmware_upgrade() {
             size_t available_bytes = upgradeSerial->available();
             if (available_bytes > 0) {
                 // 输出调试日志，显示待读取的字节数
-                Logger::debug("📌 串口已打开，尝试读取 " + std::to_string(available_bytes) + " 字节数据");
+                Logger::debug("3 📌 串口已打开，尝试读取 " + std::to_string(available_bytes) + " 字节数据");
 
                 // 创建动态大小的缓冲区来存储读取的数据
                 // 注意：C++ 标准不保证变长数组的可用性，部分编译器支持这种扩展
@@ -290,7 +294,7 @@ bool FirmwareUpdate::firmware_upgrade() {
                 if (bytes_read > 0) {
                     // 构建日志信息，包含读取的字节数和数据的十六进制表示
                     std::ostringstream oss;
-                    oss << "读取 " << bytes_read << " 字节数据：";
+                    oss << "3 读取 " << bytes_read << " 字节数据：";
                     for (size_t i = 0; i < bytes_read; ++i) {
                         oss << std::hex << static_cast<int>(read_data[i]) << " ";
                     }
@@ -312,7 +316,7 @@ bool FirmwareUpdate::firmware_upgrade() {
                         // 检查是否已达到所需的握手应答次数（默认为 3 次）
                         if (read_count >= read_iteration) {
                             // 达到目标次数，输出成功信息
-                            Logger::debug("✅ 已成功读取 " + std::to_string(read_iteration) + " 次数据！");
+                            Logger::debug("3 ✅ 已成功读取 " + std::to_string(read_iteration) + " 次数据！");
 
                             // 设置停止标志，通知其他线程可以结束
                             stop_writing = true;  // 停止写入线程
@@ -342,7 +346,7 @@ bool FirmwareUpdate::firmware_upgrade() {
             // 检查是否收到停止信号
             if (stop_writing) {
                 // 收到停止信号，输出日志并退出循环
-                Logger::debug("🛑 写入线程已停止，停止发送数据。");
+                Logger::debug("3 🛑 写入线程已停止，停止发送数据。");
                 break;
             }
 
@@ -361,9 +365,9 @@ bool FirmwareUpdate::firmware_upgrade() {
 
             // 根据写入结果输出相应的日志
             if (success) {
-                Logger::debug("✅ 发送握手信号成功！");
+                Logger::debug("3 ✅ 发送握手信号成功！");
             } else {
-                Logger::error("❌ 发送握手信号失败！");
+                Logger::error("3 ❌ 发送握手信号失败！");
             }
 
             // 每次发送后等待 100 毫秒，给设备留出响应时间
@@ -406,20 +410,26 @@ bool FirmwareUpdate::firmware_upgrade() {
     // 成功条件：读取到的握手应答次数达到或超过预设阈值（read_iteration）
     if (read_count >= read_iteration) {
         // 握手成功，输出成功信息
-        Logger::info("✅ 操作成功，已读取数据！");
+        Logger::info("3 ✅ 操作成功，已读取数据！");
     } else if (write_finished) {
         // 所有写入尝试已完成，但未收到足够的握手应答
-        Logger::error("❌ 操作失败，写入完成但未读取到足够的数据！");
+        Logger::error("3 ❌ 操作失败，写入完成但未读取到足够的数据！");
         upgradeSerial->close();  // 关闭串口连接
     } else {
         // 其他情况（理论上不应该发生）
-        Logger::error("❌ 操作失败，未读取到数据！");
+        Logger::error("3 ❌ 操作失败，未读取到数据！");
         upgradeSerial->close();  // 关闭串口连接
     }
 
     // 操作完成后短暂延时 100 毫秒
     // 给系统一些时间来处理和稳定
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+    // 成功之后无需关闭，下面的挥手需要继续使用串口
+    // 失败时关闭串口连接，释放资源
+    if (!(read_count >= read_iteration))
+        if (upgradeSerial->isOpen())
+            upgradeSerial->close();  // 关闭串口连接
 
     // 返回升级握手结果
     // true: 握手成功（收到足够次数的握手应答）
@@ -444,7 +454,7 @@ bool FirmwareUpdate::firmwareUpdate(std::vector<std::vector<uint8_t>> binArray) 
             // 如果有数据可读，则进行读取处理
             if (available_bytes > 0) {
                 // 输出调试信息，显示尝试读取的字节数
-                Logger::debug("📌 串口已打开，尝试读取 " + std::to_string(available_bytes) + " 字节数据");
+                Logger::debug("4 📌 串口已打开，尝试读取 " + std::to_string(available_bytes) + " 字节数据");
 
                 // 创建一个临时缓冲区来存储读取的数据
                 // C++ 变长数组（不是所有编译器都支持，但在这里使用）
@@ -457,7 +467,7 @@ bool FirmwareUpdate::firmwareUpdate(std::vector<std::vector<uint8_t>> binArray) 
                 if (bytes_read > 0) {
                     // 构建日志信息，包含读取的字节数和十六进制表示的数据内容
                     std::ostringstream oss;
-                    oss << "从串口读取 " << bytes_read << " 字节数据。  ";
+                    oss << "4 从串口读取 " << bytes_read << " 字节数据。  ";
                     // 将每个字节转换为十六进制显示
                     for (size_t i = 0; i < bytes_read; ++i) {
                         oss << std::hex << static_cast<int>(read_data[i]) << " ";
@@ -513,7 +523,7 @@ bool FirmwareUpdate::firmwareUpdate(std::vector<std::vector<uint8_t>> binArray) 
         // 获取当前要发送的数据帧
         auto frame = binArray[i];
 
-        Logger::debug("文件第 " + std::to_string(i) + " 数据包：" + bytesToHex(frame));
+        Logger::debug("4 文件第 " + std::to_string(i) + " 数据包：" + bytesToHex(frame));
 
         // 尝试发送当前帧，最多重试 fire_ware_frame_retry 次
         while (retry < fire_ware_frame_retry) {
@@ -523,7 +533,7 @@ bool FirmwareUpdate::firmwareUpdate(std::vector<std::vector<uint8_t>> binArray) 
             // 如果发送成功
             if (ref) {
                 // 输出成功日志
-                Logger::debug("发送第 " + std::to_string(i) + " 数据包成功！");
+                Logger::debug("4 发送第 " + std::to_string(i) + " 数据包成功！");
 
                 // 如果是最后一个数据包且成功发送，则标记整个过程成功完成
                 if (i == binArray.size() - 1) {
@@ -532,7 +542,7 @@ bool FirmwareUpdate::firmwareUpdate(std::vector<std::vector<uint8_t>> binArray) 
                 break;  // 发送成功，跳出重试循环
             } else {
                 // 发送失败，记录错误日志
-                Logger::error("❌ 发送第 " + std::to_string(i) + " 数据包失败！");
+                Logger::error("4 ❌ 发送第 " + std::to_string(i) + " 数据包失败！");
 
                 // 增加重试次数
                 ++retry;
@@ -546,16 +556,16 @@ bool FirmwareUpdate::firmwareUpdate(std::vector<std::vector<uint8_t>> binArray) 
         // 如果当前帧在多次重试后依然发送失败，则退出整个升级过程
         if (!ref) {
             // 记录失败信息
-            Logger::error("❌ 第 " + std::to_string(i) + " 数据包发送失败，跳过该数据包");
+            Logger::error("4 ❌ 第 " + std::to_string(i) + " 数据包发送失败，跳过该数据包");
             break;  // 退出循环，整个升级过程失败
         }
     }
 
     // 无论成功与否，输出固件升级完成的信息
     if (success)
-        Logger::info("固件升级完成！");
+        Logger::info("4 固件升级完成！");
     else
-        Logger::error("固件升级失败！");
+        Logger::error("4 固件升级失败！");
 
     // 通知接收线程停止运行
     stop_receive = true;
@@ -564,6 +574,12 @@ bool FirmwareUpdate::firmwareUpdate(std::vector<std::vector<uint8_t>> binArray) 
     if (receive_thread.joinable()) {
         receive_thread.join();  // 等待接收线程结束，避免资源泄露
     }
+
+    // 成功时无需关闭，下面的挥手需要继续使用串口
+    // 失败时关闭串口连接，释放资源
+    if (!success)
+        if (upgradeSerial->isOpen())
+            upgradeSerial->close();  // 关闭串口连接
 
     // 返回升级结果
     // true: 所有数据包都成功发送
@@ -599,8 +615,10 @@ bool FirmwareUpdate::sendFrame(const std::vector<uint8_t> &frame) {
     // 检查是否所有数据都已成功写入
     // 如果写入的字节数与帧大小不一致，表示发送失败
     if (bytes_written != frame.size()) {
-        Logger::error("sendCommand: Failed to write full frame. Expected: "
-                      + std::to_string(frame.size()) + ", Written: " + std::to_string(bytes_written));
+//        Logger::error("sendCommand: Failed to write full frame. Expected: "
+//                      + std::to_string(frame.size()) + ", Written: " + std::to_string(bytes_written));
+        Logger::error("4 ❌ 发送数据失败，预期写入 " + std::to_string(frame.size()) + " 字节，实际写入 " +
+                      std::to_string(bytes_written) + " 字节");
         return false;
     }
 
@@ -661,16 +679,16 @@ bool FirmwareUpdate::wave() {
 
         if (success) {
             // 写入成功，记录日志并退出重试循环
-            Logger::debug("✅ 发送挥手信号成功！");
+            Logger::debug("5 ✅ 发送挥手信号成功！");
             break;
         } else {
             // 写入失败，记录错误日志
-            Logger::error("❌ 发送挥手信号失败！");
+            Logger::error("5 ❌ 发送挥手信号失败！");
 
             // 增加重试计数器
             retry++;
             // 记录当前重试次数
-            Logger::debug("重试第 " + std::to_string(retry) + " 次...");
+            Logger::debug("5 重试第 " + std::to_string(retry) + " 次...");
 
             // 等待一小段时间再进行下一次重试
             // 这个延时可以让设备有时间处理前一次请求
@@ -682,10 +700,11 @@ bool FirmwareUpdate::wave() {
     // 如果达到最大重试次数后仍未成功，记录最终错误日志
     // 这是对整个重试过程的总结，帮助诊断问题
     if (!success) {
-        Logger::error("❌ 发送挥手信号失败，已重试 " + std::to_string(wave_sign_retry) + " 次！");
+        Logger::error("5 ❌ 发送挥手信号失败，已重试 " + std::to_string(wave_sign_retry) + " 次！");
     }
 
-    upgradeSerial->close();  // 关闭串口连接
+    if (upgradeSerial->isOpen())
+        upgradeSerial->close();  // 关闭串口连接
 
     // 返回最终的操作结果
     // true: 成功发送结束标志

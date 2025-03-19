@@ -43,6 +43,8 @@ private:
     static void log(LogLevel level, const std::string &message);
 
     static const char *logLevelToString(LogLevel level);
+
+    static std::string getCurrentTime();
 };
 
 #endif //UP_CORE_LOGGER_H

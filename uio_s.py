@@ -10,8 +10,6 @@ import up_core as up
 from up_core import LogLevel
 from up_core import ServoManager
 
-up.set_log_level(LogLevel.INFO)  # 设置日志级别为 DEBUG
-
 VERSION = "1.0.0"
 
 # ZeroMQ 相关设置
@@ -80,9 +78,6 @@ def main():
     # 设备参数
     parser.add_argument('device', nargs='?', help='要连接的串口设备（如 /dev/ttyUSB0, COM1）')
 
-    # 显示版本号
-    parser.add_argument('-v', '--version', action='version', version=f'%(prog)s {VERSION}', help='显示版本信息')
-
     # up search 模式
     parser.add_argument('--search', action='store_true', help='启动us搜索模式')
 
@@ -96,8 +91,22 @@ def main():
     # 是否启用校验
     parser.add_argument('--verify', action='store_true', help='启用舵机校验功能')
 
+    # 日志级别
+    parser.add_argument('-l', '--log', type=str, default="DEBUG", help='设置日志级别（DEBUG, INFO, ERROR）')
+
+    # 显示版本号
+    parser.add_argument('-v', '--version', action='version', version=f'%(prog)s {VERSION}', help='显示版本信息')
+
     # 解析参数
     args = parser.parse_args()
+
+    # 设置日志级别
+    log_level_map = {
+        "DEBUG": LogLevel.DEBUG,
+        "INFO": LogLevel.INFO,
+        "ERROR": LogLevel.ERROR
+    }
+    up.set_log_level(log_level_map.get(args.log.upper(), LogLevel.DEBUG))
 
     if args.search and args.device:
         # 处理多个波特率，逗号分隔
