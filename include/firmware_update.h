@@ -26,14 +26,23 @@ public:
      * @param sign_retry_count           保存结束标志发送的最大重试次数，结束标志用于通知设备固件传输已完成
      * @return
      */
-    bool upgrade(std::string port_input,
-                 int baud_rate,
-                 const std::string &bin_path,
-                 u_int8_t servo_id,
-                 int total_retry = 10,
-                 int handshake_threshold = 5,
-                 int frame_retry_count = 5,
-                 int sign_retry_count = 5);
+    bool upgrade_path(const std::string &port_input,
+                      int baud_rate,
+                      const std::string &bin_path,
+                      u_int8_t servo_id,
+                      int total_retry = 10,
+                      int handshake_threshold = 5,
+                      int frame_retry_count = 5,
+                      int sign_retry_count = 5);
+
+    bool upgrade_stream(const std::string &port_input,
+                        int baud_rate,
+                        std::vector<uint8_t> &fileBuffer,
+                        u_int8_t servo_id,
+                        int total_retry = 10,
+                        int handshake_threshold = 5,
+                        int frame_retry_count = 5,
+                        int sign_retry_count = 5);
 
 private:
     std::string port;
@@ -70,7 +79,9 @@ private:
         return ++message_counter;  // 简单的递增 ID 生成策略
     }
 
-    static std::vector<std::vector<uint8_t>> textureBinArray(const std::string &fileName);
+    static std::vector<uint8_t> textureBinArray(const std::string &binPath);
+
+    static std::vector<std::vector<uint8_t>> splitBinArray(std::vector<uint8_t> &fileBuffer, size_t dataSize);
 
     bool bootloader(uint8_t id);
 

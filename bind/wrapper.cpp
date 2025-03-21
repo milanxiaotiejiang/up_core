@@ -556,7 +556,7 @@ PYBIND11_MODULE(up_core, m) {
     py::class_<FirmwareUpdate>(m, "FirmwareUpdate")
             .def(py::init<>())  // 绑定构造函数
                     // 绑定 upgrade 方法，并支持默认参数
-            .def("upgrade", &FirmwareUpdate::upgrade,
+            .def("upgrade_path", &FirmwareUpdate::upgrade_path,
                  py::arg("port_input"),
                  py::arg("baud_rate"),
                  py::arg("bin_path"),
@@ -565,5 +565,15 @@ PYBIND11_MODULE(up_core, m) {
                  py::arg("handshake_threshold") = 5,
                  py::arg("frame_retry_count") = 5,
                  py::arg("sign_retry_count") = 5,
-                 "升级固件的方法");  // 方法的文档字符串
+                 "升级固件的方法")
+            .def("upgrade_stream", &FirmwareUpdate::upgrade_stream,
+                 py::arg("port_input"),
+                 py::arg("baud_rate"),
+                 py::arg("fileBuffer"),
+                 py::arg("servo_id"),
+                 py::arg("total_retry") = 10,
+                 py::arg("handshake_threshold") = 5,
+                 py::arg("frame_retry_count") = 5,
+                 py::arg("sign_retry_count") = 5,
+                 "升级固件的方法");
 }

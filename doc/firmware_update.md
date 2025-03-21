@@ -57,7 +57,7 @@ bool upgrade(std::string port_input, int baud_rate, const std::string &bin_path,
 
 ### 数据处理方法
 
-- `textureBinArray(const std::string &fileName)`: 读取固件文件并分割成数据帧
+- `splitBinArray(const std::string &fileName)`: 读取固件文件并分割成数据帧
 - `buildFrame(const std::vector<uint8_t> &data, int packetNumber, std::vector<uint8_t> &frame)`: 构建单个数据帧
 - `calculateCRC(const std::vector<uint8_t> &data)`: 计算数据的 CRC 校验值
 - `readFile(const std::string &fileName, std::vector<uint8_t> &buffer)`: 读取二进制文件内容

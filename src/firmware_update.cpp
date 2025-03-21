@@ -15,19 +15,35 @@
 #include "logger.h"
 #include "servo_protocol_parse.h"
 
-bool FirmwareUpdate::upgrade(std::string port_input, int baud_rate, const std::string &bin_path, u_int8_t servo_id,
-                             int total_retry, int handshake_threshold, int frame_retry_count, int sign_retry_count) {
+
+bool FirmwareUpdate::upgrade_path(const std::string &port_input, int baud_rate, const std::string &bin_path,
+                                  u_int8_t servo_id,
+                                  int total_retry, int handshake_threshold, int frame_retry_count,
+                                  int sign_retry_count) {
+
+    Logger::debug("固件路径：" + bin_path);
 
     Logger::debug(
-            "参数 port_input: " + port_input + " baud_rate: " + std::to_string(baud_rate) + " bin_path: " + bin_path +
+            "参数 port_input: " + port_input + " baud_rate: " + std::to_string(baud_rate) +
             " total_retry: " + std::to_string(total_retry) + " handshake_threshold: " +
             std::to_string(handshake_threshold) +
-            " frame_retry_count: " + std::to_string(frame_retry_count) + " sign_retry_count: " +
             std::to_string(sign_retry_count));
+
+    auto fileBuffer = textureBinArray(bin_path);
+
+    return upgrade_stream(port_input, baud_rate, fileBuffer, servo_id,
+                          total_retry, handshake_threshold,
+                          frame_retry_count, sign_retry_count);
+}
+
+bool
+FirmwareUpdate::upgrade_stream(const std::string &port_input, int baud_rate, std::vector<uint8_t> &fileBuffer,
+                               u_int8_t servo_id, int total_retry, int handshake_threshold, int frame_retry_count,
+                               int sign_retry_count) {
 
     // 保存串口设备路径到成员变量
     // 使用 std::move 优化字符串传递，避免不必要的复制
-    this->port = std::move(port_input);
+    this->port = port_input;
 
     // 保存当前波特率到成员变量
     // 波特率决定了与设备通信的速度，单位为比特/秒
@@ -53,7 +69,7 @@ bool FirmwareUpdate::upgrade(std::string port_input, int baud_rate, const std::s
     try {
         // 调用 textureBinArray 方法将固件文件转换为数据帧数组
         // 该方法会将固件文件分割成多个 128 字节的数据包，并添加帧头和 CRC 校验
-        binArray = textureBinArray(bin_path);
+        binArray = splitBinArray(fileBuffer, fileBuffer.size());
     } catch (const std::exception &e) {
         // 捕获并处理标准异常，记录具体错误信息
         // e.what() 返回异常的描述信息
@@ -127,12 +143,9 @@ bool FirmwareUpdate::upgrade(std::string port_input, int baud_rate, const std::s
     return ref;
 }
 
-std::vector<std::vector<uint8_t>> FirmwareUpdate::textureBinArray(const std::string &fileName) {
-    Logger::info("1 开始读取固件文件：" + fileName);
+std::vector<uint8_t> FirmwareUpdate::textureBinArray(const std::string &binPath) {
 
-    // 创建一个二维数组用于存储分解后的数据帧
-    // 每个元素是一个 vector<uint8_t>，代表一个完整的固件数据帧
-    std::vector<std::vector<uint8_t>> frames;
+    Logger::info("1 开始读取固件文件：" + binPath);
 
     // 创建缓冲区用于存储从文件中读取的所有二进制数据
     // 这个 vector 将包含整个固件文件的原始字节内容
@@ -140,14 +153,25 @@ std::vector<std::vector<uint8_t>> FirmwareUpdate::textureBinArray(const std::str
 
     // 调用 readFile 函数读取指定文件的内容到 fileBuffer 中
     // 如果文件不存在或无法访问，readFile 会抛出异常
-    readFile(fileName, fileBuffer);
+    readFile(binPath, fileBuffer);
+
+    // 获取文件总大小，用于控制分包循环的结束
+    size_t dataSize = fileBuffer.size();
+
+    return fileBuffer;
+}
+
+std::vector<std::vector<uint8_t>> FirmwareUpdate::splitBinArray(std::vector<uint8_t> &fileBuffer, size_t dataSize) {
+
+    Logger::info("1 拆分固件文件：" + std::to_string(dataSize) + " 字节");
+
+    // 创建一个二维数组用于存储分解后的数据帧
+    // 每个元素是一个 vector<uint8_t>，代表一个完整的固件数据帧
+    std::vector<std::vector<uint8_t>> frames;
 
     // 初始化包序号为 1，固件升级协议要求从 1 开始计数
     // 这个序号会包含在每个数据帧的帧头中，用于设备识别数据顺序
     int packetNumber = 1;
-
-    // 获取文件总大小，用于控制分包循环的结束
-    size_t dataSize = fileBuffer.size();
 
     // 初始化偏移量为 0，表示从文件开始处理数据
     // 该偏移量用于追踪当前处理到的文件位置

@@ -1,4 +1,5 @@
 import argparse
+import base64
 import up_core as up
 from up_core import LogLevel, FirmwareUpdate
 
@@ -6,16 +7,47 @@ VERSION = "1.0.0"
 
 
 # 固件升级的主要逻辑
-def upgrade_firmware(device, baudrate, bin_path, servo_id, total_retry, handshake_count, frame_retry, sign_retry):
+def upgrade_firmware(device, baudrate, bin_path, file_buffer, servo_id, total_retry, handshake_count, frame_retry,
+                     sign_retry):
     """调用固件升级逻辑"""
     fw_update = FirmwareUpdate()
-    success = fw_update.upgrade(device, baudrate, bin_path, servo_id, total_retry, handshake_count, frame_retry,
-                                sign_retry)
+
+    if file_buffer:
+        # 使用字节流进行升级
+        success = fw_update.upgrade_stream(device, baudrate, list(file_buffer), servo_id,
+                                           total_retry, handshake_count, frame_retry, sign_retry)
+    else:
+        # 使用文件路径进行升级
+        success = fw_update.upgrade_path(device, baudrate, bin_path, servo_id,
+                                         total_retry, handshake_count, frame_retry, sign_retry)
+
     return success
 
 
 def hex_int(x):
     return int(x, 16)
+
+
+def decode_base64_to_bytes(base64_str: str) -> bytes:
+    """解码无头部的 Base64 字符串"""
+
+    # 如果包含前缀，去掉它
+    if base64_str.startswith('data:'):
+        base64_str = base64_str.split(',')[1]
+
+    """解码无头部的 Base64 字符串"""
+    return base64.b64decode(base64_str)
+
+
+def convert_file_to_base64(file_path: str) -> str:
+    """将文件转换为 Base64 字符串"""
+    with open(file_path, 'rb') as file:
+        file_data = file.read()
+
+    # 对文件数据进行 Base64 编码
+    base64_str = base64.b64encode(file_data).decode('utf-8')
+
+    return base64_str
 
 
 def main():
@@ -27,6 +59,9 @@ def main():
 
     # 固件文件路径
     parser.add_argument('bin_path', nargs='?', help='要升级的固件文件路径')
+
+    # fileBuffer 参数，传入 base64 编码的字节流
+    parser.add_argument('--fileBufferBase64', type=str, help='固件字节流的 base64 编码')
 
     # 设置波特率
     parser.add_argument('-b', '--baudrate', type=int, default=9600, help='设置波特率（默认: 9600）')
@@ -63,10 +98,15 @@ def main():
     }
     up.set_log_level(log_level_map.get(args.log.upper(), LogLevel.DEBUG))
 
+    # 读取 base64 编码的字节流
+    file_buffer = None
+    if args.fileBufferBase64:
+        file_buffer = decode_base64_to_bytes(args.fileBufferBase64)
+
     # 调用固件升级
-    if args.device and args.bin_path:
+    if args.device:
         success = upgrade_firmware(
-            args.device, args.baudrate, args.bin_path, args.servo_id,
+            args.device, args.baudrate, args.bin_path, file_buffer, args.servo_id,
             args.total_retry, args.handshake_count,
             args.frame_retry, args.sign_retry
         )
@@ -77,3 +117,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+    # base_ = convert_file_to_base64('/home/noodles/CLionProjects/up_core/file/CDS5516_1.0.bin')
+    # print(base_)
