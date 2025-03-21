@@ -2,15 +2,20 @@ import argparse
 import up_core as up
 from up_core import LogLevel, FirmwareUpdate
 
-
 VERSION = "1.0.0"
 
+
 # 固件升级的主要逻辑
-def upgrade_firmware(device, baudrate, bin_path, total_retry, handshake_count, frame_retry, sign_retry):
+def upgrade_firmware(device, baudrate, bin_path, servo_id, total_retry, handshake_count, frame_retry, sign_retry):
     """调用固件升级逻辑"""
     fw_update = FirmwareUpdate()
-    success = fw_update.upgrade(device, baudrate, bin_path, total_retry, handshake_count, frame_retry, sign_retry)
+    success = fw_update.upgrade(device, baudrate, bin_path, servo_id, total_retry, handshake_count, frame_retry,
+                                sign_retry)
     return success
+
+
+def hex_int(x):
+    return int(x, 16)
 
 
 def main():
@@ -25,6 +30,9 @@ def main():
 
     # 设置波特率
     parser.add_argument('-b', '--baudrate', type=int, default=9600, help='设置波特率（默认: 9600）')
+
+    # 设置舵机
+    parser.add_argument('-s', '--servo_id', type=hex_int, default=0x01, help='设置舵机ID（默认: 0x01）')
 
     # 总重试次数
     parser.add_argument('-r', '--total_retry', type=int, default=10, help='固件升级的总重试次数（默认: 10 次）')
@@ -58,7 +66,7 @@ def main():
     # 调用固件升级
     if args.device and args.bin_path:
         success = upgrade_firmware(
-            args.device, args.baudrate, args.bin_path,
+            args.device, args.baudrate, args.bin_path, args.servo_id,
             args.total_retry, args.handshake_count,
             args.frame_retry, args.sign_retry
         )

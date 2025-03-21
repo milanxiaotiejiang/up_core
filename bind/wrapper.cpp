@@ -560,6 +560,7 @@ PYBIND11_MODULE(up_core, m) {
                  py::arg("port_input"),
                  py::arg("baud_rate"),
                  py::arg("bin_path"),
+                 py::arg("servo_id"),
                  py::arg("total_retry") = 10,
                  py::arg("handshake_threshold") = 5,
                  py::arg("frame_retry_count") = 5,

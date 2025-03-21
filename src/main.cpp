@@ -95,7 +95,7 @@ int main() {
 
         // 固件升级
         FirmwareUpdate sender;
-        sender.upgrade("/dev/ttyUSB0", 1000000, "/home/noodles/CLionProjects/up_core/file/CDS5516_1.0.bin");
+        sender.upgrade("/dev/ttyUSB0", 1000000, "/home/noodles/CLionProjects/up_core/file/CDS5516_1.0.bin", 0x01);
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 

@@ -15,7 +15,7 @@
 #include "logger.h"
 #include "servo_protocol_parse.h"
 
-bool FirmwareUpdate::upgrade(std::string port_input, int baud_rate, const std::string &bin_path,
+bool FirmwareUpdate::upgrade(std::string port_input, int baud_rate, const std::string &bin_path, u_int8_t servo_id,
                              int total_retry, int handshake_threshold, int frame_retry_count, int sign_retry_count) {
 
     Logger::debug(
@@ -76,7 +76,7 @@ bool FirmwareUpdate::upgrade(std::string port_input, int baud_rate, const std::s
 
         // 第一步：启动舵机的 Bootloader 模式
         // 0x01 是舵机的 ID 号，标识要升级的具体舵机设备
-        ref = bootloader(0x01);
+        ref = bootloader(servo_id);
         if (!ref) {
             // Bootloader 启动失败，记录错误并继续下一次重试
             Logger::error("2 ❌ Bootloader 启动失败，重试中...");

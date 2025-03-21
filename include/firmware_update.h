@@ -19,6 +19,7 @@ public:
      * @param port_input                      保存串口设备路径到成员变量
      * @param baud_rate         保存当前波特率到成员变量，波特率决定了与设备通信的速度，单位为比特/秒
      * @param bin_path                  固件文件路径
+     * @param servo_id          舵机ID
      * @param total_retry               固件升级主循环，最多尝试 total_retry 次，每次循环都会执行完整的升级流程，如果任何步骤失败则重试整个流程
      * @param handshake_threshold           保存握手成功计数阈值，当接收到的握手确认次数达到此值时，认为握手成功
      * @param frame_retry_count     保存固件数据帧发送的最大重试次数，每个数据帧发送失败后最多重试这么多次
@@ -28,6 +29,7 @@ public:
     bool upgrade(std::string port_input,
                  int baud_rate,
                  const std::string &bin_path,
+                 u_int8_t servo_id,
                  int total_retry = 10,
                  int handshake_threshold = 5,
                  int frame_retry_count = 5,
