@@ -70,13 +70,13 @@ int main() {
 
 
         // 获取版本
-//        getSoftwareVersion(servo);
+        getSoftwareVersion(servo);
 
 
         // 搜索
 //        search(servo);
 
-        servo::ServoProtocol servoProtocol(0x01);
+//        servo::ServoProtocol servoProtocol(0x01);
 
         // 模式
 //        changeMode(servo, servoProtocol);
@@ -88,17 +88,17 @@ int main() {
         // 速度、温度、负载、电压、位置
 //        loadInfo(servo, servoProtocol);
 
-        reset(servo, servoProtocol);
+//        reset(servo, servoProtocol);
 
-        servo.close();
+//        servo.close();
 
 
         // 固件升级
-        FirmwareUpdate sender;
-        sender.upgrade_path("/dev/ttyUSB0", 1000000,
-                            "/home/noodles/CLionProjects/up_core/file/CDS5516_1.0.bin", 0x01);
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+//        FirmwareUpdate sender;
+//        sender.upgrade_path("/dev/ttyUSB0", 1000000,
+//                            "/home/noodles/CLionProjects/up_core/file/CDS5516_1.0.bin", 0x01);
+//
+//        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
         servo.close();
     } catch (std::exception &e) {
