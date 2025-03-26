@@ -1,7 +1,7 @@
 # dependencies.py
 import asyncio
 
-import serial.serial_manager as sm
+import pup_core.serial.serial_manager as sm
 import logging
 
 import up_core as up
@@ -12,7 +12,7 @@ from up_core import RAM
 
 from pup_core.model.EEPROMData import EEPROMData
 from pup_core.model.RAMData import RAMData
-from serial.servo_parser import preview_data
+from pup_core.serial.servo_parser import preview_data
 
 # 创建 serial_manager 实例
 serial_manager = sm.SerialManager()

@@ -45,8 +45,8 @@ ext_modules = [
         source_files,  # 源文件列表
         include_dirs=[
             "include",
-            "include/serial",  # 这里可能缺少逗号，导致路径拼接错误
-            "include/serial/impl"
+            os.path.join("include", "serial"),
+            os.path.join("include", "serial", "impl")
         ],
         libraries=["gpiod"],
         define_macros=[("VERSION_INFO", get_version())],  # 定义宏 VERSION_INFO
@@ -70,6 +70,14 @@ setup(
     packages=find_packages(),
     install_requires=[
         'numpy',  # 依赖的第三方库
+        'fastapi==0.95.1',
+        'protobuf==3.19.0',
+        'websockets==10.3',
+        'click==8.1.8',
+        'uvicorn==0.33.0',
+        'httpx==0.23.0',
+        'pyzmq==26.2.1',
+        'blinker==1.8.2',
     ],  # 依赖项
     entry_points={  # 命令行工具入口
         'console_scripts': [
@@ -82,7 +90,7 @@ setup(
     },
     ext_modules=ext_modules,  # C/C++ 扩展模块
     extras_require={
-        "test": "pytest"
+        "test": ["pytest"]
     },  # 额外依赖项（如测试依赖）
     cmdclass={
         "build_ext": build_ext
