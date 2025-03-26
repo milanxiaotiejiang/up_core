@@ -4,7 +4,15 @@
 #include <pybind11/pybind11.h>
 #include "logger.h"
 #include "servo.h"
+
+#ifdef __linux__
+
 #include "adc.h"
+#include "gpio.h"
+#include "spi.h"
+
+#endif
+
 #include "servo_manager.h"
 #include "servo_protocol_parse.h"
 #include "firmware_update.h"
@@ -49,6 +57,7 @@ PYBIND11_MODULE(up_core, m) {
                 Logger::setLogLevel(Logger::INFO); // 设置默认日志级别为INFO
             }, "Initialize the Logger with INFO level");
 
+#ifdef __linux__
 
     // GPIO
     py::class_<gpio::GPIO, std::shared_ptr<gpio::GPIO>>(m, "GPIO")
@@ -85,6 +94,8 @@ PYBIND11_MODULE(up_core, m) {
     py::class_<spi::SPIException>(m, "SPIException")
             .def(py::init<const char *>())
             .def("what", &spi::SPIException::what);
+
+#endif
 
     // servo::AlarmShutdownConfig
     py::enum_<servo::AlarmShutdownConfig>(m, "AlarmShutdownConfig")

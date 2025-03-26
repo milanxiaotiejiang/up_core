@@ -87,12 +87,6 @@ set(up_core_SRCS
         include/servo_protocol.h
         src/servo.cpp
         include/servo.h
-        src/gpio.cpp
-        include/gpio.h
-        src/spi.cpp
-        include/spi.h
-        src/adc.cpp
-        include/adc.h
         src/logger.cpp
         include/logger.h
         include/servo_manager.h
@@ -102,6 +96,19 @@ set(up_core_SRCS
         include/servo_protocol_parse.h
         src/servo_protocol_parse.cpp
 )
+
+if (APPLE)
+elseif (UNIX)
+    list(APPEND up_core_SRCS
+            src/gpio.cpp
+            include/gpio.h
+            src/spi.cpp
+            include/spi.h
+            src/adc.cpp
+            include/adc.h
+    )
+elseif (WIN32)
+endif ()
 
 # 平台相关实现
 if (APPLE)
