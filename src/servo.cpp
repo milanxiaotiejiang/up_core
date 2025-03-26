@@ -30,8 +30,11 @@ Servo::~Servo() {
  * @brief 初始化舵机
  */
 void Servo::init() {
+#ifdef __linux__
     if (gpio != nullptr)
         gpio->init();
+#endif
+
 
     if (!serial->isOpen())
         serial->open();
@@ -53,24 +56,30 @@ void Servo::close() {
     if (serial->isOpen())
         serial->close();
 
+#ifdef __linux__
     if (gpio_enabled)
         gpio->release();
+#endif
 }
 
 /**
  * @brief 使能舵机总线
  */
 void Servo::enableBus() {
+#ifdef __linux__
     if (gpio_enabled)
         gpio->setValue(1);
+#endif
 }
 
 /**
  * @brief 失能舵机总线
  */
 void Servo::disableBus() {
+#ifdef __linux__
     if (gpio_enabled)
         gpio->setValue(0);
+#endif
 }
 
 /**
@@ -112,8 +121,8 @@ bool Servo::sendWaitCommand(const std::vector<uint8_t> &frame, std::vector<uint8
 
     // 将消息 ID 添加到数据帧中，确保发送的每条消息都带有这个 ID
     std::vector<uint8_t> frame_with_id = frame;
-//    frame_with_id.push_back(static_cast<uint8_t>(message_id & 0xFF));  // 添加低字节
-//    frame_with_id.push_back(static_cast<uint8_t>((message_id >> 8) & 0xFF));  // 添加高字节
+    //    frame_with_id.push_back(static_cast<uint8_t>(message_id & 0xFF));  // 添加低字节
+    //    frame_with_id.push_back(static_cast<uint8_t>((message_id >> 8) & 0xFF));  // 添加高字节
 
     // 创建一个条件变量和锁，用于等待此消息的响应
     std::unique_lock<std::mutex> wait_lock(mutex_);
@@ -139,14 +148,13 @@ bool Servo::sendWaitCommand(const std::vector<uint8_t> &frame, std::vector<uint8
     // 使用 wait_for，等待指定时间或条件变量被通知
     if (message_conditions_[message_id]->wait_until(wait_lock, timeout, [this, message_id] {
         // 判断条件是等待接收到数据
-        return received_data_.count(message_id) > 0;  // 如果已接收到该 message_id 的数据
+        return received_data_.count(message_id) > 0; // 如果已接收到该 message_id 的数据
     })) {
-
         // 取出对应的响应数据
         auto data = received_data_[message_id];
-        received_data_.erase(message_id);  // 删除已处理的响应
+        received_data_.erase(message_id); // 删除已处理的响应
 
-        message_conditions_.erase(message_id);  // 删除对应的条件变量
+        message_conditions_.erase(message_id); // 删除对应的条件变量
 
 
         // 将数据传递到外部传递的 response_data
@@ -160,9 +168,8 @@ bool Servo::sendWaitCommand(const std::vector<uint8_t> &frame, std::vector<uint8
         Logger::error("sendWaitCommand: Timeout waiting for response.");
         // 清理数据和条件变量
         message_conditions_.erase(message_id);
-        return false;  // 超时
+        return false; // 超时
     }
-
 }
 
 bool Servo::performSerialData(const std::vector<uint8_t> &packet) {
@@ -215,7 +222,7 @@ void Servo::processSerialData() {
         auto it = std::search(buffer.begin(), buffer.end(), start_flag.begin(), start_flag.end());
 
         if (it == buffer.end()) {
-//            Logger::debug("❌ 未找到数据包起始标志，丢弃数据");
+            //            Logger::debug("❌ 未找到数据包起始标志，丢弃数据");
             buffer.clear();
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             continue;
@@ -231,14 +238,12 @@ void Servo::processSerialData() {
         // 清空缓冲区，因为数据已经复制到 packet
         buffer.clear();
 
-//        Logger::debug("起始数据 " + bytesToHex(packet));
+        //        Logger::debug("起始数据 " + bytesToHex(packet));
 
         // 假设数据帧最后两个字节是消息 ID
-//        uint32_t received_message_id = static_cast<uint32_t>(packet[packet.size() - 1]) |
-//                                       (static_cast<uint32_t>(packet[packet.size() - 2]) << 8);
-        uint32_t received_message_id = message_counter;
-
-        {
+        //        uint32_t received_message_id = static_cast<uint32_t>(packet[packet.size() - 1]) |
+        //                                       (static_cast<uint32_t>(packet[packet.size() - 2]) << 8);
+        uint32_t received_message_id = message_counter; {
             std::lock_guard<std::mutex> lock(mutex_);
 
             // 将接收到的数据存入 map，使用消息 ID 作为键

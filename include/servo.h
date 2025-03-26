@@ -6,7 +6,13 @@
 #define UP_CORE_SERVO_H
 
 #include "serial/serial.h"
+
+#ifdef __linux__
+
 #include "gpio.h"
+
+#endif
+
 #include "servo_protocol.h"
 #include <stdint.h>
 #include <utility>
@@ -48,18 +54,25 @@
 
 class Servo {
 public:
+    //    Servo(const gpio::GPIO &gpio, bool gpio_enabled,
+    //          const std::string &port = "",
+    //          uint32_t baudrate = 9600,
+    //          serial::Timeout timeout = serial::Timeout(),
+    //          serial::bytesize_t bytesize = serial::eightbits,
+    //          serial::parity_t parity = serial::parity_none,
+    //          serial::stopbits_t stopbits = serial::stopbits_one,
+    //          serial::flowcontrol_t flowcontrol = serial::flowcontrol_none);
 
-//    Servo(const gpio::GPIO &gpio, bool gpio_enabled,
-//          const std::string &port = "",
-//          uint32_t baudrate = 9600,
-//          serial::Timeout timeout = serial::Timeout(),
-//          serial::bytesize_t bytesize = serial::eightbits,
-//          serial::parity_t parity = serial::parity_none,
-//          serial::stopbits_t stopbits = serial::stopbits_one,
-//          serial::flowcontrol_t flowcontrol = serial::flowcontrol_none);
 
+#ifdef __linux__
     explicit Servo(std::shared_ptr<serial::Serial> serial, std::shared_ptr<gpio::GPIO> gpio = nullptr)
-            : serial(std::move(serial)), gpio(std::move(gpio)) {}
+        : serial(std::move(serial)), gpio(std::move(gpio)) {
+    }
+#elif _WIN32
+    explicit Servo(std::shared_ptr<serial::Serial> serial)
+        : serial(std::move(serial)) {
+    }
+#endif
 
     ~Servo();
 
@@ -87,9 +100,13 @@ public:
 
 private:
     std::shared_ptr<serial::Serial> serial;
+#ifdef __linux__
     std::shared_ptr<gpio::GPIO> gpio;
+#endif
 
+#ifdef __linux__
     bool gpio_enabled = false;
+#endif
 
     // 接收数据的线程
     std::thread receive_thread;
@@ -99,9 +116,9 @@ private:
     DataCallback dataCallback;
 
     // 用于存放接收到的数据，按消息 ID 存储
-    std::unordered_map<uint32_t, std::vector<uint8_t>> received_data_;
+    std::unordered_map<uint32_t, std::vector<uint8_t> > received_data_;
     // 存储每个消息 ID 对应的条件变量
-    std::unordered_map<uint32_t, std::unique_ptr<std::condition_variable>> message_conditions_;
+    std::unordered_map<uint32_t, std::unique_ptr<std::condition_variable> > message_conditions_;
     // 用于保护接收到的数据和发送过程的互斥锁
     std::mutex mutex_;
     // 消息 ID 计数器
@@ -112,7 +129,7 @@ private:
 
     // 生成唯一的消息 ID
     uint32_t generateMessageId() {
-        return ++message_counter;  // 简单的递增 ID 生成策略
+        return ++message_counter; // 简单的递增 ID 生成策略
     }
 
     void processSerialData();

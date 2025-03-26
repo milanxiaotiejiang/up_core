@@ -29,7 +29,7 @@ public:
     bool upgrade_path(const std::string &port_input,
                       int baud_rate,
                       const std::string &bin_path,
-                      u_int8_t servo_id,
+                      uint8_t servo_id,
                       int total_retry = 10,
                       int handshake_threshold = 5,
                       int frame_retry_count = 5,
@@ -38,7 +38,7 @@ public:
     bool upgrade_stream(const std::string &port_input,
                         int baud_rate,
                         std::vector<uint8_t> &fileBuffer,
-                        u_int8_t servo_id,
+                        uint8_t servo_id,
                         int total_retry = 10,
                         int handshake_threshold = 5,
                         int frame_retry_count = 5,
@@ -63,9 +63,9 @@ private:
 
     const int write_iteration = 10;
     const int read_iteration = 3;
-    const u_int8_t request_sing = 0x64;
-    const u_int8_t handshake_sign = 0x43;
-    const u_int8_t wave_sign = 0x04;
+    const uint8_t request_sing = 0x64;
+    const uint8_t handshake_sign = 0x43;
+    const uint8_t wave_sign = 0x04;
 
 
     std::atomic<bool> stop_receive{false};

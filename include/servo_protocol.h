@@ -9,21 +9,21 @@
 #include <stdint.h>
 #include "string"
 #include <functional>
+#include <stdexcept>
 
 namespace servo {
-
     const uint8_t HEAD_ADDRESS = 0x1E;
 
     class ServoProtocol;
 
     enum class AlarmShutdownConfig : uint8_t {
-        NONE = 0,       // 不启用卸载保护
-        INSTRUCTION_ERROR = 1 << 6,  // 指令错误
-        CHECKSUM_ERROR = 1 << 4,  // 校验和错误
-        RANGE_ERROR = 1 << 3,  // 指令超范围
-        OVERHEAT = 1 << 2,  // 过热（默认）
-        ANGLE_ERROR = 1 << 1,  // 角度超范围
-        VOLTAGE_ERROR = 1 << 0   // 电压超范围
+        NONE = 0, // 不启用卸载保护
+        INSTRUCTION_ERROR = 1 << 6, // 指令错误
+        CHECKSUM_ERROR = 1 << 4, // 校验和错误
+        RANGE_ERROR = 1 << 3, // 指令超范围
+        OVERHEAT = 1 << 2, // 过热（默认）
+        ANGLE_ERROR = 1 << 1, // 角度超范围
+        VOLTAGE_ERROR = 1 << 0 // 电压超范围
     };
 
     // 允许 `AlarmShutdownConfig` 进行按位操作（`|`, `&`, `~`）
@@ -40,14 +40,14 @@ namespace servo {
     }
 
     enum class AlarmLEDConfig : uint8_t {
-        NONE = 0,       // 不设置任何报警
-        INSTRUCTION_ERROR = 1 << 6,  // 指令错误
-        OVERLOAD = 1 << 5,  // 过载
-        CHECKSUM_ERROR = 1 << 4,  // 校验和错误
-        RANGE_ERROR = 1 << 3,  // 指令超范围
-        OVERHEAT = 1 << 2,  // 过热
-        ANGLE_ERROR = 1 << 1,  // 超过角度范围
-        VOLTAGE_ERROR = 1 << 0   // 超过电压范围
+        NONE = 0, // 不设置任何报警
+        INSTRUCTION_ERROR = 1 << 6, // 指令错误
+        OVERLOAD = 1 << 5, // 过载
+        CHECKSUM_ERROR = 1 << 4, // 校验和错误
+        RANGE_ERROR = 1 << 3, // 指令超范围
+        OVERHEAT = 1 << 2, // 过热
+        ANGLE_ERROR = 1 << 1, // 超过角度范围
+        VOLTAGE_ERROR = 1 << 0 // 超过电压范围
     };
 
     // 允许 `AlarmLEDConfig` 进行按位操作（`|`, `&`, `~`）
@@ -65,33 +65,33 @@ namespace servo {
 
 
     enum class StatusReturnLevel : uint8_t {
-        NO_RESPONSE = 0,     // 对所有指令都不返回
-        READ_ONLY = 1,       // 只对读指令返回
-        ALL_RESPONSE = 2     // 对所有指令返回
+        NO_RESPONSE = 0, // 对所有指令都不返回
+        READ_ONLY = 1, // 只对读指令返回
+        ALL_RESPONSE = 2 // 对所有指令返回
     };
 
     enum class ORDER : uint8_t {
-        PING = 0x01,                    // 1（0x01） Ping
-        READ_DATA = 0x02,               // 2（0x02） 读数据
-        WRITE_DATA = 0x03,              // 3（0x03） 写数据
-        REG_WRITE = 0x04,               // 4（0x04） REG WRITE 类似于WRITE DATA，但是控制字符写入后并不马上动作，直到ACTION指令到达
-        ACTION = 0x05,                  // 5（0x05） ACTION 触发REG WRITE指令
-        RESET = 0x06,                   // 6（0x06） 复位舵机
-        BOOTLOADER = 0x07,                   // 7（0x07） 复位到 bootloader 模式
-        SYNC_WRITE = 0x83,              // 131（0x83） 同步写
+        PING = 0x01, // 1（0x01） Ping
+        READ_DATA = 0x02, // 2（0x02） 读数据
+        WRITE_DATA = 0x03, // 3（0x03） 写数据
+        REG_WRITE = 0x04, // 4（0x04） REG WRITE 类似于WRITE DATA，但是控制字符写入后并不马上动作，直到ACTION指令到达
+        ACTION = 0x05, // 5（0x05） ACTION 触发REG WRITE指令
+        RESET = 0x06, // 6（0x06） 复位舵机
+        BOOTLOADER = 0x07, // 7（0x07） 复位到 bootloader 模式
+        SYNC_WRITE = 0x83, // 131（0x83） 同步写
     };
 
     // ===================  基类  ===================
     class Base {
     protected:
-        uint8_t id_;  // 舵机 ID
+        uint8_t id_; // 舵机 ID
 
     public:
         explicit Base(uint8_t id);
 
-        virtual ~Base() = default;  // ✅ 统一析构函数
+        virtual ~Base() = default; // ✅ 统一析构函数
 
-        uint8_t getID() const { return id_; }  // ✅ 统一获取 ID
+        uint8_t getID() const { return id_; } // ✅ 统一获取 ID
 
         std::vector<uint8_t> buildShortPacket(int write_length, std::vector<uint8_t> commandData);
 
@@ -228,30 +228,28 @@ namespace servo {
         std::vector<uint8_t>
         buildSyncWritePacket(uint8_t address, int write_length, std::vector<ServoProtocol> &protocols,
                              const std::function<std::vector<uint8_t>(ServoProtocol &data, int position)> &func);
-
-
     };
 
     // ===================  EEPROM 相关  ===================
     enum class EEPROM : uint8_t {
-        MODEL_NUMBER_L = 0x00,          // 0（0x00） 低位型号号码 读 2（0x02）
-        MODEL_NUMBER_H = 0x01,          // 1（0x01） 高位型号号码 读 1（0x01）
-        VERSION = 0x02,                 // 2（0x02） 软件版本 读 1（0x01）
-        ID = 0x03,                      // 3（0x03） ID 读/写 1（0x01）
-        BAUDRATE = 0x04,                // 4（0x04） 波特率 读/写 1（0x01）
-        RETURN_DELAY_TIME = 0x05,       // 5（0x05） 返回延迟时间 读/写 0（0x00）
-        CW_ANGLE_LIMIT_L = 0x06,        // 6（0x06） 顺时针角度限制（L） 读/写 0（0x00）
-        CW_ANGLE_LIMIT_H = 0x07,        // 7（0x07） 顺时针角度限制（H） 读/写 0（0x00）
-        CCW_ANGLE_LIMIT_L = 0x08,       // 8（0x08） 逆时针角度限制（L） 读/写 255（0xFF）
-        CCW_ANGLE_LIMIT_H = 0x09,       // 9（0x09） 逆时针角度限制（H） 读/写 3（0x03）
-        MAX_TEMPERATURE = 0x0B,         // 11（0x0B） 最高温度上限 读/写 80（0x50）
-        MIN_VOLTAGE = 0x0C,             // 12（0x0C） 最低输入电压 读/写 ?
-        MAX_VOLTAGE = 0x0D,             // 13（0x0D） 最高输入电压 读/写 ?
-        MAX_TORQUE_L = 0x0E,            // 14（0x0E） 最大扭矩（L） 读/写 255（0xFF）
-        MAX_TORQUE_H = 0x0F,            // 15（0x0F） 最大扭矩（H） 读/写 3（0x03）
-        STATUS_RETURN_LEVEL = 0x10,     // 16（0x10） 应答状态级别 读/写 2（0x02）
-        ALARM_LED = 0x11,               // 17（0x11） LED闪烁 读/写 37（0x25）
-        ALARM_SHUTDOWN = 0x12,          // 18（0x12） 卸载条件 读/写 4（0x04）
+        MODEL_NUMBER_L = 0x00, // 0（0x00） 低位型号号码 读 2（0x02）
+        MODEL_NUMBER_H = 0x01, // 1（0x01） 高位型号号码 读 1（0x01）
+        VERSION = 0x02, // 2（0x02） 软件版本 读 1（0x01）
+        ID = 0x03, // 3（0x03） ID 读/写 1（0x01）
+        BAUDRATE = 0x04, // 4（0x04） 波特率 读/写 1（0x01）
+        RETURN_DELAY_TIME = 0x05, // 5（0x05） 返回延迟时间 读/写 0（0x00）
+        CW_ANGLE_LIMIT_L = 0x06, // 6（0x06） 顺时针角度限制（L） 读/写 0（0x00）
+        CW_ANGLE_LIMIT_H = 0x07, // 7（0x07） 顺时针角度限制（H） 读/写 0（0x00）
+        CCW_ANGLE_LIMIT_L = 0x08, // 8（0x08） 逆时针角度限制（L） 读/写 255（0xFF）
+        CCW_ANGLE_LIMIT_H = 0x09, // 9（0x09） 逆时针角度限制（H） 读/写 3（0x03）
+        MAX_TEMPERATURE = 0x0B, // 11（0x0B） 最高温度上限 读/写 80（0x50）
+        MIN_VOLTAGE = 0x0C, // 12（0x0C） 最低输入电压 读/写 ?
+        MAX_VOLTAGE = 0x0D, // 13（0x0D） 最高输入电压 读/写 ?
+        MAX_TORQUE_L = 0x0E, // 14（0x0E） 最大扭矩（L） 读/写 255（0xFF）
+        MAX_TORQUE_H = 0x0F, // 15（0x0F） 最大扭矩（H） 读/写 3（0x03）
+        STATUS_RETURN_LEVEL = 0x10, // 16（0x10） 应答状态级别 读/写 2（0x02）
+        ALARM_LED = 0x11, // 17（0x11） LED闪烁 读/写 37（0x25）
+        ALARM_SHUTDOWN = 0x12, // 18（0x12） 卸载条件 读/写 4（0x04）
         EEPROM_COUNT
     };
 
@@ -336,36 +334,35 @@ namespace servo {
 
         // 读取指定长度的 Eeprom 数据
         std::vector<uint8_t> buildGetEepromData(EEPROM eeprom, int length);
-
     };
 
     // ===================  RAM 相关  ===================
     enum class RAM : uint8_t {
-        TORQUE_ENABLE = 0x18,           // 24（0x18） 扭矩开关 读/写 0（0x00）
-        LED = 0x19,                     // 25（0x19） LED开关 读/写 0（0x00）
-        CW_COMPLIANCE_MARGIN = 0x1A,    // 26（0x1A） 顺时针不灵敏区 读/写 2（0x02）
-        CCW_COMPLIANCE_MARGIN = 0x1B,   // 27（0x1B） 逆时针不灵敏区 读/写 2（0x02）
-        CW_COMPLIANCE_SLOPE = 0x1C,     // 28（0x1C） 顺时针比例系数 读/写 32（0x20）
-        CCW_COMPLIANCE_SLOPE = 0x1D,    // 29（0x1D） 逆时针比例系数 读/写 32（0x20）
-        GOAL_POSITION_L = 0x1E,         // 30（0x1E） 目标位置（L） 读/写 [Addr36]value
-        GOAL_POSITION_H = 0x1F,         // 31（0x1F） 目标位置（H） 读/写 [Addr37]value
-        MOVING_SPEED_L = 0x20,          // 32（0x20） 运行速度（L） 读/写 0
-        MOVING_SPEED_H = 0x21,          // 33（0x21） 运行速度（H） 读/写 0
-        ACCELERATION = 0x22,            // 34（0x22） 加速度 读/写 32
-        DECELERATION = 0x23,            // 35（0x23） 减速度 读/写 32
-        PRESENT_POSITION_L = 0x24,      // 36（0x24） 当前位置（L） 读 ？
-        PRESENT_POSITION_H = 0x25,      // 37（0x25） 当前位置（H） 读 ？
-        PRESENT_SPEED_L = 0x26,         // 38（0x26） 当前速度（L） 读 ？
-        PRESENT_SPEED_H = 0x27,         // 39（0x27） 当前速度（H） 读 ？
-        PRESENT_LOAD_L = 0x28,          // 40（0x28） 当前负载 读 ？
-        PRESENT_LOAD_H = 0x29,          // 41（0x29） 当前负载 读 ？
-        PRESENT_VOLTAGE = 0x2A,         // 42（0x2A） 当前电压 读 ？
-        TEMPERATURE = 0x2B,             // 43（0x2B） 当前温度 读 ？
-        REG_WRITE = 0x2C,               // 44（0x2C） REG WRITE标志 读 0（0x00）
-        MOVING = 0x2E,                  // 46（0x2E） 运行中标志 读 0（0x00）
-        LOCK = 0x2F,                    // 47（0x2F） 锁标志 读/写 0（0x00）
-        MIN_PWM_L = 0x30,               // 48（0x30） 最小PWM(L) 读/写 90（0x5A）
-        MIN_PWM_H = 0x31,               // 49（0x31） 最小PWM(H) 读/写 00（0x00）
+        TORQUE_ENABLE = 0x18, // 24（0x18） 扭矩开关 读/写 0（0x00）
+        LED = 0x19, // 25（0x19） LED开关 读/写 0（0x00）
+        CW_COMPLIANCE_MARGIN = 0x1A, // 26（0x1A） 顺时针不灵敏区 读/写 2（0x02）
+        CCW_COMPLIANCE_MARGIN = 0x1B, // 27（0x1B） 逆时针不灵敏区 读/写 2（0x02）
+        CW_COMPLIANCE_SLOPE = 0x1C, // 28（0x1C） 顺时针比例系数 读/写 32（0x20）
+        CCW_COMPLIANCE_SLOPE = 0x1D, // 29（0x1D） 逆时针比例系数 读/写 32（0x20）
+        GOAL_POSITION_L = 0x1E, // 30（0x1E） 目标位置（L） 读/写 [Addr36]value
+        GOAL_POSITION_H = 0x1F, // 31（0x1F） 目标位置（H） 读/写 [Addr37]value
+        MOVING_SPEED_L = 0x20, // 32（0x20） 运行速度（L） 读/写 0
+        MOVING_SPEED_H = 0x21, // 33（0x21） 运行速度（H） 读/写 0
+        ACCELERATION = 0x22, // 34（0x22） 加速度 读/写 32
+        DECELERATION = 0x23, // 35（0x23） 减速度 读/写 32
+        PRESENT_POSITION_L = 0x24, // 36（0x24） 当前位置（L） 读 ？
+        PRESENT_POSITION_H = 0x25, // 37（0x25） 当前位置（H） 读 ？
+        PRESENT_SPEED_L = 0x26, // 38（0x26） 当前速度（L） 读 ？
+        PRESENT_SPEED_H = 0x27, // 39（0x27） 当前速度（H） 读 ？
+        PRESENT_LOAD_L = 0x28, // 40（0x28） 当前负载 读 ？
+        PRESENT_LOAD_H = 0x29, // 41（0x29） 当前负载 读 ？
+        PRESENT_VOLTAGE = 0x2A, // 42（0x2A） 当前电压 读 ？
+        TEMPERATURE = 0x2B, // 43（0x2B） 当前温度 读 ？
+        REG_WRITE = 0x2C, // 44（0x2C） REG WRITE标志 读 0（0x00）
+        MOVING = 0x2E, // 46（0x2E） 运行中标志 读 0（0x00）
+        LOCK = 0x2F, // 47（0x2F） 锁标志 读/写 0（0x00）
+        MIN_PWM_L = 0x30, // 48（0x30） 最小PWM(L) 读/写 90（0x5A）
+        MIN_PWM_H = 0x31, // 49（0x31） 最小PWM(H) 读/写 00（0x00）
         RAM_COUNT
     };
 
@@ -491,7 +488,6 @@ namespace servo {
 
         // 还原角度
         std::vector<uint8_t> buildRestoreAngleLimits();
-
     };
 
     class ServoProtocol : public Base {
@@ -501,7 +497,8 @@ namespace servo {
         Motor motor;
 
         explicit ServoProtocol(uint8_t id)
-                : Base(id), eeprom(id), ram(id), motor(id) {}
+            : Base(id), eeprom(id), ram(id), motor(id) {
+        }
     };
 
 
@@ -528,18 +525,19 @@ namespace servo {
         ServoErrorInfo errorInfo = {NO_ERROR, "无错误"};
 
         std::vector<ServoErrorInfo> errors = {
-                {INSTRUCTION_ERROR,          "指令错误"},
-                {OVERLOAD,                   "过载"},
-                {CHECKSUM_ERROR,             "校验和错误"},
-                {COMMAND_OUT_OF_RANGE,       "指令超范围"},
-                {OVERHEAT,                   "过热"},
-                {OUT_OF_RANGE,               "角度超范围"},
-                {OVER_VOLTAGE_UNDER_VOLTAGE, "过压/欠压"},
+            {INSTRUCTION_ERROR, "指令错误"},
+            {OVERLOAD, "过载"},
+            {CHECKSUM_ERROR, "校验和错误"},
+            {COMMAND_OUT_OF_RANGE, "指令超范围"},
+            {OVERHEAT, "过热"},
+            {OUT_OF_RANGE, "角度超范围"},
+            {OVER_VOLTAGE_UNDER_VOLTAGE, "过压/欠压"},
         };
 
         for (const auto &err: errors) {
             if (error & static_cast<uint8_t>(err.error)) {
-                if (errorInfo.error == NO_ERROR) { // 只取第一个错误
+                if (errorInfo.error == NO_ERROR) {
+                    // 只取第一个错误
                     errorInfo = err;
                 } else {
                     errorInfo.description += "，" + err.description; // 连接多个错误信息
@@ -550,7 +548,7 @@ namespace servo {
         return errorInfo;
     }
 
-// 从 speed_ratio 转换为 RPM
+    // 从 speed_ratio 转换为 RPM
     static float speedRatioToRPM(float speed_ratio) {
         if (speed_ratio < -1.0f || speed_ratio > 1.0f) {
             throw std::out_of_range("速度比例超出范围 (-1.0 - 1.0)");
@@ -558,7 +556,7 @@ namespace servo {
         return speed_ratio * 62.0f;
     }
 
-// 从 RPM 转换为 speed_ratio
+    // 从 RPM 转换为 speed_ratio
     static float rpmToSpeedRatio(float rpm) {
         if (rpm < -62.0f || rpm > 62.0f) {
             throw std::out_of_range("RPM 超出范围 (-62.0 - 62.0)");

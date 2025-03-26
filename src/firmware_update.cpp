@@ -17,7 +17,7 @@
 
 
 bool FirmwareUpdate::upgrade_path(const std::string &port_input, int baud_rate, const std::string &bin_path,
-                                  u_int8_t servo_id,
+                                  uint8_t servo_id,
                                   int total_retry, int handshake_threshold, int frame_retry_count,
                                   int sign_retry_count) {
 
@@ -38,7 +38,7 @@ bool FirmwareUpdate::upgrade_path(const std::string &port_input, int baud_rate, 
 
 bool
 FirmwareUpdate::upgrade_stream(const std::string &port_input, int baud_rate, std::vector<uint8_t> &fileBuffer,
-                               u_int8_t servo_id, int total_retry, int handshake_threshold, int frame_retry_count,
+                               uint8_t servo_id, int total_retry, int handshake_threshold, int frame_retry_count,
                                int sign_retry_count) {
 
     // 保存串口设备路径到成员变量

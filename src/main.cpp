@@ -9,9 +9,17 @@
 #include <iomanip>
 #include <thread>
 #include <chrono>
+#include <serial/impl/win.h>
+
 #include "servo_manager.h"
 #include "firmware_update.h"
 #include "servo_protocol_parse.h"
+
+#ifdef __WIN32
+#include <windows.h>
+#include <io.h>
+#include <fcntl.h>
+#endif
 
 int searchServo();
 
@@ -32,19 +40,28 @@ void loadInfo(Servo &servo, servo::ServoProtocol &servoProtocol);
 void reset(Servo &servo, servo::ServoProtocol &servoProtocol);
 
 int main() {
+#ifdef __WIN32
+    SetConsoleOutputCP(CP_UTF8);
+#endif
+
+    std::setlocale(LC_ALL, "en_US.UTF-8");
 
     Logger::setLogLevel(Logger::DEBUG);
 
     // 搜索舵机 ID
-//    return searchServo();
+    //    return searchServo();
 
 
     try {
         listPorts();
 
-
+#ifdef __WIN32
+        std::shared_ptr<serial::Serial> serialPtr =
+                std::make_shared<serial::Serial>("COM2", 1000000, serial::Timeout::simpleTimeout(1000));
+# elif __linux__
         std::shared_ptr<serial::Serial> serialPtr =
                 std::make_shared<serial::Serial>("/dev/ttyUSB0", 1000000, serial::Timeout::simpleTimeout(1000));
+#endif
 
         Servo servo(serialPtr);
         servo.init();
@@ -70,41 +87,39 @@ int main() {
 
 
         // 获取版本
-        getSoftwareVersion(servo);
-
+        // getSoftwareVersion(servo);
 
         // 搜索
-//        search(servo);
+        // search(servo);
 
-//        servo::ServoProtocol servoProtocol(0x01);
+        servo::ServoProtocol servoProtocol(0x01);
 
         // 模式
-//        changeMode(servo, servoProtocol);
+        // changeMode(servo, servoProtocol);
 
-//        runServo(servo, servoProtocol);
+        // runServo(servo, servoProtocol);
 
-//        runMotor(servo, servoProtocol);
+        // runMotor(servo, servoProtocol);
 
         // 速度、温度、负载、电压、位置
-//        loadInfo(servo, servoProtocol);
+        // loadInfo(servo, servoProtocol);
 
-//        reset(servo, servoProtocol);
+        // reset(servo, servoProtocol);
 
-//        servo.close();
+        // servo.close();
 
 
         // 固件升级
-//        FirmwareUpdate sender;
-//        sender.upgrade_path("/dev/ttyUSB0", 1000000,
-//                            "/home/noodles/CLionProjects/up_core/file/CDS5516_1.0.bin", 0x01);
-//
-//        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        FirmwareUpdate sender;
+        sender.upgrade_path("/dev/ttyUSB0", 1000000,
+                            "/home/noodles/CLionProjects/up_core/file/CDS5516_1.0.bin", 0x01);
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
         servo.close();
     } catch (std::exception &e) {
         std::cerr << e.what() << std::endl;
     }
-
 }
 
 void reset(Servo &servo, servo::ServoProtocol &servoProtocol) {
@@ -119,18 +134,18 @@ void reset(Servo &servo, servo::ServoProtocol &servoProtocol) {
         Logger::error("❌ 发送复位命令失败！");
     }
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
-
 }
 
-void loadInfo(Servo &servo, servo::ServoProtocol &servoProtocol) {// buildGetEepromData 读取 EEPROM 数据
-// buildGetAngleLimit 读取角度限制
-// buildGetMaxTemperature 读取最高温度上限
-// buildGetVoltageRange 读取输入电压范围
-// buildGetMaxTorque 读取最大扭矩
+void loadInfo(Servo &servo, servo::ServoProtocol &servoProtocol) {
+    // buildGetEepromData 读取 EEPROM 数据
+    // buildGetAngleLimit 读取角度限制
+    // buildGetMaxTemperature 读取最高温度上限
+    // buildGetVoltageRange 读取输入电压范围
+    // buildGetMaxTorque 读取最大扭矩
     {
         std::vector<uint8_t> cmd = servoProtocol.eeprom.buildGetEepromData(
-                servo::EEPROM::MODEL_NUMBER_L,
-                static_cast<int>(servo::EEPROM::EEPROM_COUNT) - static_cast<int>(servo::EEPROM::MODEL_NUMBER_L) - 1
+            servo::EEPROM::MODEL_NUMBER_L,
+            static_cast<int>(servo::EEPROM::EEPROM_COUNT) - static_cast<int>(servo::EEPROM::MODEL_NUMBER_L) - 1
         );
         Logger::info("发送命令：" + bytesToHex(cmd));
         std::vector<uint8_t> response_data;
@@ -146,19 +161,19 @@ void loadInfo(Servo &servo, servo::ServoProtocol &servoProtocol) {// buildGetEep
     }
 
     // buildGetRam 读取 RAM 数据
-// buildGetLEDEnabled 读取 LED 状态
-// buildGetGoalPosition 读取目标位置
-// buildGetRunSpeed 读取运行速度
-// buildGetAccelerationDeceleration 读取加碱速度
-// buildGetPosition 读取当前位置
-// buildGetSpeed 读取当前速度
-// buildGetLoad 读取负载
-// buildGetVoltage 读取电压
-// buildGetTemperature 读取温度
+    // buildGetLEDEnabled 读取 LED 状态
+    // buildGetGoalPosition 读取目标位置
+    // buildGetRunSpeed 读取运行速度
+    // buildGetAccelerationDeceleration 读取加碱速度
+    // buildGetPosition 读取当前位置
+    // buildGetSpeed 读取当前速度
+    // buildGetLoad 读取负载
+    // buildGetVoltage 读取电压
+    // buildGetTemperature 读取温度
     {
         std::vector<uint8_t> cmd = servoProtocol.ram.buildGetRamData(
-                servo::RAM::TORQUE_ENABLE,
-                static_cast<int>(servo::RAM::RAM_COUNT) - static_cast<int>(servo::RAM::TORQUE_ENABLE) - 1
+            servo::RAM::TORQUE_ENABLE,
+            static_cast<int>(servo::RAM::RAM_COUNT) - static_cast<int>(servo::RAM::TORQUE_ENABLE) - 1
         );
         Logger::info("发送命令：" + bytesToHex(cmd));
         std::vector<uint8_t> response_data;
@@ -177,8 +192,7 @@ void loadInfo(Servo &servo, servo::ServoProtocol &servoProtocol) {// buildGetEep
     }
 }
 
-void runMotor(Servo &servo, servo::ServoProtocol &servoProtocol) {
-    {
+void runMotor(Servo &servo, servo::ServoProtocol &servoProtocol) { {
         // **RPM 顺时针**
         std::vector<uint8_t> cmd = servoProtocol.motor.buildSetMotorSpeed(32.0f);
 
@@ -190,8 +204,7 @@ void runMotor(Servo &servo, servo::ServoProtocol &servoProtocol) {
         }
 
         std::this_thread::sleep_for(std::chrono::milliseconds(5000));
-    }
-    {
+    } {
         // **RPM 逆时针**
         std::vector<uint8_t> cmd = servoProtocol.motor.buildSetMotorSpeed(-32.0f);
 
@@ -203,8 +216,7 @@ void runMotor(Servo &servo, servo::ServoProtocol &servoProtocol) {
         }
 
         std::this_thread::sleep_for(std::chrono::milliseconds(5000));
-    }
-    {
+    } {
         // **停止 (速度 0)**
         std::vector<uint8_t> cmd = servoProtocol.motor.buildSetMotorSpeed(0.0f);
 
@@ -238,7 +250,7 @@ void runServo(Servo &servo, servo::ServoProtocol &servoProtocol) {
 void changeMode(Servo &servo, servo::ServoProtocol &servoProtocol) {
     {
         const std::vector<uint8_t> &mode = servoProtocol.motor.buildServoMode();
-//            const std::vector<uint8_t> &mode = servoProtocol.motor.buildMotorMode();
+        //            const std::vector<uint8_t> &mode = servoProtocol.motor.buildMotorMode();
         Logger::info("发送命令：" + bytesToHex(mode));
 
         std::vector<uint8_t> response_data;
@@ -253,7 +265,6 @@ void changeMode(Servo &servo, servo::ServoProtocol &servoProtocol) {
 }
 
 void search(Servo &servo) {
-
     // 	m_SendBuf[0] = 0xff;
     //	m_SendBuf[1] = 0xff;
     //	m_SendBuf[2] = aSid;
@@ -269,9 +280,9 @@ void search(Servo &servo) {
     //                6C 01 00 00 20 20 6D 01 00 00 00 00
     {
         servo::ServoProtocol servoProtocol(0x01);
-//            auto data = servoProtocol.eeprom.buildCommandPacket(servo::ORDER::READ_DATA,
-//                                                                static_cast<uint8_t>(servo::RAM::GOAL_POSITION_L),
-//                                                                {0x0C});
+        //            auto data = servoProtocol.eeprom.buildCommandPacket(servo::ORDER::READ_DATA,
+        //                                                                static_cast<uint8_t>(servo::RAM::GOAL_POSITION_L),
+        //                                                                {0x0C});
         auto data = servoProtocol.buildReadPacket(servo::HEAD_ADDRESS, 0x0C);
 
         Logger::info("发送命令后收到数据：" + bytesToHex(data));
@@ -283,10 +294,7 @@ void search(Servo &servo) {
             servo.performSerialData(response_data);
         }
         std::this_thread::sleep_for(std::chrono::microseconds(1000));
-    }
-
-
-    {
+    } {
         servo::ServoProtocol servoProtocol1(1);
         auto data1 = servoProtocol1.buildPingPacket();
         std::vector<uint8_t> response_data;
@@ -308,16 +316,17 @@ void search(Servo &servo) {
     }
 }
 
-void getSoftwareVersion(Servo &servo) {/**
- * FF
- * FF
- * 01 id (每个舵机都有一个 ID 号。ID 号范围 0～253,转换为十六进制 0X00～0XFD。)(ID 号 254 为广播 ID,若控制器发出的 ID 号为 254(0XFE)，所有的舵机均接收指令，但都不返回应答信息。)
- * 04 length
- * 02 instruction ([PING:0x01] [READ DATA:0x02] [WRITE DATA:0x03] [REG WRITE:0x04] [ACTION:0x05] [RESET:0x06] [SYNC WRITE:0x83])
- * 02 ([PING:无] [READ DATA:数据读出段的首地址] [WRITE DATA:数据写入段的首地址])
- * 01 ([PING:无] [READ DATA:读取数据的长度] [WRITE DATA:写入的第一个数据、依次类推])
- * F5 check sum
- */
+void getSoftwareVersion(Servo &servo) {
+    /**
+     * FF
+     * FF
+     * 01 id (每个舵机都有一个 ID 号。ID 号范围 0～253,转换为十六进制 0X00～0XFD。)(ID 号 254 为广播 ID,若控制器发出的 ID 号为 254(0XFE)，所有的舵机均接收指令，但都不返回应答信息。)
+     * 04 length
+     * 02 instruction ([PING:0x01] [READ DATA:0x02] [WRITE DATA:0x03] [REG WRITE:0x04] [ACTION:0x05] [RESET:0x06] [SYNC WRITE:0x83])
+     * 02 ([PING:无] [READ DATA:数据读出段的首地址] [WRITE DATA:数据写入段的首地址])
+     * 01 ([PING:无] [READ DATA:读取数据的长度] [WRITE DATA:写入的第一个数据、依次类推])
+     * F5 check sum
+     */
     // FF FF 01 04 02 02 01 F5
 
     /**
@@ -345,20 +354,20 @@ void getSoftwareVersion(Servo &servo) {/**
     }
 }
 
-void listPorts() {//        const std::vector<serial::PortInfo> &listPorts = serial::list_ports();
-//        for (const auto &item: listPorts) {
-//            Logger::info("设备名称：" + item.port + ", 描述：" + item.description + ", 硬件 ID：" + item.hardware_id);
-//        }
-
-
+void listPorts() {
+    Logger::info("输出所有串口信息：");
+    const std::vector<serial::PortInfo> &listPorts = serial::list_ports();
+    for (const auto &item: listPorts) {
+        Logger::info("设备名称：" + item.port + ", 描述：" + item.description + ", 硬件 ID：" + item.hardware_id);
+    }
 }
 
 int searchServo() {
     Logger::info(ServoManager::instance().searching() ? "正在搜索中..." : "搜索已停止");
 
     std::thread stopThread([]() {
-//        std::this_thread::sleep_for(std::chrono::milliseconds(10000));
-//        ServoManager::instance().stopSearchServoID();
+        //        std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+        //        ServoManager::instance().stopSearchServoID();
     });
     stopThread.detach();
 
@@ -372,4 +381,3 @@ int searchServo() {
 
     return 0;
 }
-
