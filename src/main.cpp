@@ -42,19 +42,10 @@ void loadInfo(Servo &servo, servo::ServoProtocol &servoProtocol);
 void reset(Servo &servo, servo::ServoProtocol &servoProtocol);
 
 int main() {
-    // Logger::setLogLevel(Logger::LogLevel::DEBUG);
-    // Logger::error("底层中文字符测试前 +++++++++++");
-
-    // std::cout << "b cout信息：中文测试" << std::endl;
-    // std::cerr << "b cerr信息：中文测试" << std::endl;
-    // std::clog << "b clog信息：中文测试" << std::endl;
 
     setConsoleOutputCP();
-    // #ifdef __WIN32
-    //     SetConsoleOutputCP(CP_UTF8);
-    // #endif
 
-    Logger::setLogLevel(Logger::DEBUG);
+    Logger::setLogLevel(Logger::INFO);
 
     std::cout << "out 信息：中文测试" << std::endl;
     std::cerr << "err 信息：中文测试" << std::endl;
@@ -63,8 +54,6 @@ int main() {
     Logger::debug("Logger debug 中文测试 -----------");
     Logger::error("Logger error 中文测试 -----------");
     Logger::info("Logger info 中文测试 -----------");
-    // setConsoleOutputCP();
-
 
     // 搜索舵机 ID
     //    return searchServo();
@@ -121,15 +110,15 @@ int main() {
         // 速度、温度、负载、电压、位置
         // loadInfo(servo, servoProtocol);
 
-        // reset(servo, servoProtocol);
+        reset(servo, servoProtocol);
 
         // servo.close();
 
 
         // 固件升级
-        FirmwareUpdate sender;
-        sender.upgrade_path("/dev/ttyUSB0", 1000000,
-                            "/home/noodles/CLionProjects/up_core/file/CDS5516_1.0.bin", 0x01);
+        // FirmwareUpdate sender;
+        // sender.upgrade_path("/dev/ttyUSB0", 1000000,
+        //                     "/home/noodles/CLionProjects/up_core/file/CDS5516_1.0.bin", 0x01);
 
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
