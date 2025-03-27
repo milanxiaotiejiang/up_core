@@ -9,7 +9,7 @@
 
 #ifdef __linux__
 
-#include "gpio.h"
+#include "unix/gpio.h"
 
 #endif
 
@@ -55,9 +55,11 @@
 class Servo {
 public:
 #ifdef __linux__
+
     explicit Servo(std::shared_ptr<serial::Serial> serial, std::shared_ptr<gpio::GPIO> gpio = nullptr)
-        : serial(std::move(serial)), gpio(std::move(gpio)) {
+            : serial(std::move(serial)), gpio(std::move(gpio)) {
     }
+
 #elif _WIN32
     explicit Servo(std::shared_ptr<serial::Serial> serial)
         : serial(std::move(serial)) {

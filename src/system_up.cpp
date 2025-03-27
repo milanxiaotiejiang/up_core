@@ -20,8 +20,4 @@ void setConsoleOutputCP() {
     std::ios::sync_with_stdio(false);
     std::wcout.imbue(std::locale("")); // 让 std::wcout 也支持 UTF-8
 #endif
-
-
-    std::cout << "out 信息：中文测试" << std::endl;
-    Logger::debug("Logger debug 中文测试 -----------");
 }

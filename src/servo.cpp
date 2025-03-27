@@ -6,9 +6,13 @@
 #include "logger.h"
 #include "servo_protocol_parse.h"
 #include <iostream>
+
 #ifdef __linux__
+
 #include <unistd.h>
+
 #endif
+
 #include <algorithm>
 #include <iomanip>
 
@@ -245,7 +249,8 @@ void Servo::processSerialData() {
         // 假设数据帧最后两个字节是消息 ID
         //        uint32_t received_message_id = static_cast<uint32_t>(packet[packet.size() - 1]) |
         //                                       (static_cast<uint32_t>(packet[packet.size() - 2]) << 8);
-        uint32_t received_message_id = message_counter; {
+        uint32_t received_message_id = message_counter;
+        {
             std::lock_guard<std::mutex> lock(mutex_);
 
             // 将接收到的数据存入 map，使用消息 ID 作为键

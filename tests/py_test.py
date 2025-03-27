@@ -44,8 +44,9 @@ from up_core import ServoManager
 from up_core import FirmwareUpdate
 
 import sys
+
 print(sys.getdefaultencoding())  # 获取 Python 默认编码
-print(sys.stdout.encoding)       # 获取标准输出编码
+print(sys.stdout.encoding)  # 获取标准输出编码
 print(sys.getfilesystemencoding())  # 获取文件系统编码
 
 logging.basicConfig(level=logging.DEBUG)
@@ -73,4 +74,3 @@ up.system("ls")
 servoProtocol = Base(0)
 data = servoProtocol.buildResetPacket()
 print(issubclass(up.SerialException, Exception))  # True
-

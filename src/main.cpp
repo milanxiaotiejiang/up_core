@@ -5,9 +5,13 @@
 #include "servo.h"
 #include "serial/serial.h"
 #include "logger.h"
+
 #ifdef __linux__
+
 #include <unistd.h>
+
 #endif
+
 #include <iomanip>
 #include <thread>
 #include <chrono>
@@ -157,8 +161,8 @@ void loadInfo(Servo &servo, servo::ServoProtocol &servoProtocol) {
     // buildGetMaxTorque 读取最大扭矩
     {
         std::vector<uint8_t> cmd = servoProtocol.eeprom.buildGetEepromData(
-            servo::EEPROM::MODEL_NUMBER_L,
-            static_cast<int>(servo::EEPROM::EEPROM_COUNT) - static_cast<int>(servo::EEPROM::MODEL_NUMBER_L) - 1
+                servo::EEPROM::MODEL_NUMBER_L,
+                static_cast<int>(servo::EEPROM::EEPROM_COUNT) - static_cast<int>(servo::EEPROM::MODEL_NUMBER_L) - 1
         );
         Logger::info("发送命令：" + bytesToHex(cmd));
         std::vector<uint8_t> response_data;
@@ -185,8 +189,8 @@ void loadInfo(Servo &servo, servo::ServoProtocol &servoProtocol) {
     // buildGetTemperature 读取温度
     {
         std::vector<uint8_t> cmd = servoProtocol.ram.buildGetRamData(
-            servo::RAM::TORQUE_ENABLE,
-            static_cast<int>(servo::RAM::RAM_COUNT) - static_cast<int>(servo::RAM::TORQUE_ENABLE) - 1
+                servo::RAM::TORQUE_ENABLE,
+                static_cast<int>(servo::RAM::RAM_COUNT) - static_cast<int>(servo::RAM::TORQUE_ENABLE) - 1
         );
         Logger::info("发送命令：" + bytesToHex(cmd));
         std::vector<uint8_t> response_data;
@@ -205,7 +209,8 @@ void loadInfo(Servo &servo, servo::ServoProtocol &servoProtocol) {
     }
 }
 
-void runMotor(Servo &servo, servo::ServoProtocol &servoProtocol) { {
+void runMotor(Servo &servo, servo::ServoProtocol &servoProtocol) {
+    {
         // **RPM 顺时针**
         std::vector<uint8_t> cmd = servoProtocol.motor.buildSetMotorSpeed(32.0f);
 
@@ -217,7 +222,8 @@ void runMotor(Servo &servo, servo::ServoProtocol &servoProtocol) { {
         }
 
         std::this_thread::sleep_for(std::chrono::milliseconds(5000));
-    } {
+    }
+    {
         // **RPM 逆时针**
         std::vector<uint8_t> cmd = servoProtocol.motor.buildSetMotorSpeed(-32.0f);
 
@@ -229,7 +235,8 @@ void runMotor(Servo &servo, servo::ServoProtocol &servoProtocol) { {
         }
 
         std::this_thread::sleep_for(std::chrono::milliseconds(5000));
-    } {
+    }
+    {
         // **停止 (速度 0)**
         std::vector<uint8_t> cmd = servoProtocol.motor.buildSetMotorSpeed(0.0f);
 
@@ -307,7 +314,8 @@ void search(Servo &servo) {
             servo.performSerialData(response_data);
         }
         std::this_thread::sleep_for(std::chrono::microseconds(1000));
-    } {
+    }
+    {
         servo::ServoProtocol servoProtocol1(1);
         auto data1 = servoProtocol1.buildPingPacket();
         std::vector<uint8_t> response_data;

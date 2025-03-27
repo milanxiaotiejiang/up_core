@@ -2,9 +2,8 @@
 // Created by noodles on 25-2-19.
 //
 
-#include "spi.h"
+#include "unix/spi.h"
 
-#include "spi.h"
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/ioctl.h>

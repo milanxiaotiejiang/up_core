@@ -2,7 +2,7 @@
 // Created by noodles on 25-2-19.
 //
 
-#include "adc.h"
+#include "unix/adc.h"
 #include <iostream>
 
 namespace adc {

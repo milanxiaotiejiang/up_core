@@ -23,10 +23,10 @@ bool FirmwareUpdate::upgrade_path(const std::string &port_input, int baud_rate, 
     Logger::debug("固件路径：" + bin_path);
 
     Logger::debug(
-        "参数 port_input: " + port_input + " baud_rate: " + std::to_string(baud_rate) +
-        " total_retry: " + std::to_string(total_retry) + " handshake_threshold: " +
-        std::to_string(handshake_threshold) +
-        std::to_string(sign_retry_count));
+            "参数 port_input: " + port_input + " baud_rate: " + std::to_string(baud_rate) +
+            " total_retry: " + std::to_string(total_retry) + " handshake_threshold: " +
+            std::to_string(handshake_threshold) +
+            std::to_string(sign_retry_count));
 
 
     std::vector<uint8_t> fileBuffer = textureBinArray(bin_path);

@@ -497,7 +497,7 @@ namespace servo {
         Motor motor;
 
         explicit ServoProtocol(uint8_t id)
-            : Base(id), eeprom(id), ram(id), motor(id) {
+                : Base(id), eeprom(id), ram(id), motor(id) {
         }
     };
 

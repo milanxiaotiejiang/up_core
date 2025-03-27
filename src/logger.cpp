@@ -79,8 +79,7 @@ const char *Logger::logLevelToString(Logger::LogLevel level) {
             return " INFO  ";
         case Logger::WARNING:
             return "WARNING";
-        case Logger::ERROR
-        :
+        case Logger::ERROR:
             return " ERROR ";
         case Logger::OFF:
             return " OFF   ";
