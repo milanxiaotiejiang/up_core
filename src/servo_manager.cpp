@@ -16,7 +16,7 @@ void ServoManager::startSearchServoID(const std::string &port, const std::vector
     }
 
     isSearching.store(true);
-    stop_predicate.store(false);   // 重置 stop_thread 为 false，允许重新启动搜索
+    stop_predicate.store(false); // 重置 stop_thread 为 false，允许重新启动搜索
 
     this->searchPort = port;
 
@@ -42,7 +42,7 @@ void ServoManager::startSearchThread() {
             if (stop_predicate) {
                 isSearching.store(false);
                 Logger::info("搜索线程已停止");
-                break;  // 安全停止线程
+                break; // 安全停止线程
             }
 
             if (dequeBauds.empty()) {
@@ -51,10 +51,9 @@ void ServoManager::startSearchThread() {
                 break;
             }
 
-            int baud = dequeBauds.front();  // 获取队列头部元素
+            int baud = dequeBauds.front(); // 获取队列头部元素
             std::shared_ptr<Servo> servo = mapServos[baud]; // 获取对应的舵机对象
             if (!servo) {
-
                 Logger::info("  搜索波特率：" + std::to_string(baud));
 
                 std::shared_ptr<serial::Serial> serialPtr =
@@ -81,9 +80,9 @@ void ServoManager::startSearchThread() {
                     }
                 });
 
-                searchID.store(0);  // 重置 ID
+                searchID.store(0); // 重置 ID
 
-                mapServos[baud] = servo;    // 保存舵机对象到 map 中
+                mapServos[baud] = servo; // 保存舵机对象到 map 中
             }
 
             int currentId = searchID.load();

@@ -5,7 +5,7 @@ int add(int a, int b) {
     return a + b;
 }
 
-void system() {
+void m_system() {
 #if defined(__x86_64__) || defined(__amd64__)
     printf("This is an x86_64 system.\n");
 #elif defined(__i386__)

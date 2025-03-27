@@ -6,7 +6,9 @@
 #include "logger.h"
 #include "servo_protocol_parse.h"
 #include <iostream>
+#ifdef __linux__
 #include <unistd.h>
+#endif
 #include <algorithm>
 #include <iomanip>
 

@@ -13,7 +13,6 @@
 
 class FirmwareUpdate {
 public:
-
     /**
      *
      * @param port_input                      保存串口设备路径到成员变量
@@ -69,25 +68,25 @@ private:
 
 
     std::atomic<bool> stop_receive{false};
-    std::unordered_map<uint32_t, std::vector<uint8_t>> received_data_;
-    std::unordered_map<uint32_t, std::unique_ptr<std::condition_variable>> message_conditions_;
+    std::unordered_map<uint32_t, std::vector<uint8_t> > received_data_;
+    std::unordered_map<uint32_t, std::unique_ptr<std::condition_variable> > message_conditions_;
     std::mutex mutex_;
     uint32_t message_counter;
 
     // 生成唯一的消息 ID
     uint32_t generateMessageId() {
-        return ++message_counter;  // 简单的递增 ID 生成策略
+        return ++message_counter; // 简单的递增 ID 生成策略
     }
 
-    static std::vector<uint8_t> textureBinArray(const std::string &binPath);
+    std::vector<uint8_t> textureBinArray(const std::string &binPath);
 
-    static std::vector<std::vector<uint8_t>> splitBinArray(std::vector<uint8_t> &fileBuffer, size_t dataSize);
+    std::vector<std::vector<uint8_t> > splitBinArray(std::vector<uint8_t> &fileBuffer, size_t dataSize);
 
     bool bootloader(uint8_t id);
 
     bool firmware_upgrade();
 
-    bool firmwareUpdate(std::vector<std::vector<uint8_t>> binArray);
+    bool firmwareUpdate(std::vector<std::vector<uint8_t> > binArray);
 
     bool sendFrame(const std::vector<uint8_t> &frame);
 
@@ -98,7 +97,6 @@ private:
     static uint16_t calculateCRC(const std::vector<uint8_t> &data);
 
     static void readFile(const std::string &fileName, std::vector<uint8_t> &buffer);
-
 };
 
 

@@ -11,6 +11,7 @@
 Logger::LogLevel Logger::logLevel_ = Logger::INFO;
 std::mutex Logger::mutex_;
 
+
 // 设置全局日志级别
 void Logger::setLogLevel(LogLevel level) {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -65,7 +66,7 @@ std::string Logger::getCurrentTime() {
     auto duration = now.time_since_epoch();
     auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(duration).count() % 1000;
 
-    ss << '.' << std::setw(3) << std::setfill('0') << milliseconds;  // 补齐毫秒为三位数
+    ss << '.' << std::setw(3) << std::setfill('0') << milliseconds; // 补齐毫秒为三位数
 
     return ss.str();
 }
@@ -78,7 +79,8 @@ const char *Logger::logLevelToString(Logger::LogLevel level) {
             return " INFO  ";
         case Logger::WARNING:
             return "WARNING";
-        case Logger::ERROR:
+        case Logger::ERROR
+        :
             return " ERROR ";
         case Logger::OFF:
             return " OFF   ";

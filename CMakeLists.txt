@@ -8,6 +8,7 @@ project(up_core)
 # 设置 C++ 标准
 #set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD 14)
+#set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # 启用 C 和 C++ 语言支持
@@ -89,23 +90,25 @@ set(up_core_SRCS
         include/servo.h
         src/logger.cpp
         include/logger.h
-        include/servo_manager.h
         src/servo_manager.cpp
-        include/firmware_update.h
+        include/servo_manager.h
         src/firmware_update.cpp
-        include/servo_protocol_parse.h
+        include/firmware_update.h
         src/servo_protocol_parse.cpp
+        include/servo_protocol_parse.h
+        src/system_up.cpp
+        include/system_up.h
 )
 
 if (APPLE)
 elseif (UNIX)
     list(APPEND up_core_SRCS
-            src/gpio.cpp
-            include/gpio.h
-            src/spi.cpp
-            include/spi.h
-            src/adc.cpp
-            include/adc.h
+            src/unix/gpio.cpp
+            include/unix/gpio.h
+            src/unix/spi.cpp
+            include/unix/spi.h
+            src/unix/adc.cpp
+            include/unix/adc.h
     )
 elseif (WIN32)
 endif ()
@@ -136,6 +139,8 @@ elseif (WIN32)
     target_link_libraries(up_core_base setupapi)
     target_link_libraries(up_core_main setupapi)
 endif ()
+
+message("up_core_SRCS = ${up_core_SRCS}")
 
 # 生成 Python 扩展模块
 pybind11_add_module(up_core MODULE bind/wrapper.cpp ${up_core_SRCS})

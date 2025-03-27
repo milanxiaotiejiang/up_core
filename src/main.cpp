@@ -5,7 +5,9 @@
 #include "servo.h"
 #include "serial/serial.h"
 #include "logger.h"
+#ifdef __linux__
 #include <unistd.h>
+#endif
 #include <iomanip>
 #include <thread>
 #include <chrono>
@@ -14,12 +16,8 @@
 #include "servo_manager.h"
 #include "firmware_update.h"
 #include "servo_protocol_parse.h"
+#include "system_up.h"
 
-#ifdef __WIN32
-#include <windows.h>
-#include <io.h>
-#include <fcntl.h>
-#endif
 
 int searchServo();
 
@@ -40,13 +38,29 @@ void loadInfo(Servo &servo, servo::ServoProtocol &servoProtocol);
 void reset(Servo &servo, servo::ServoProtocol &servoProtocol);
 
 int main() {
-#ifdef __WIN32
-    SetConsoleOutputCP(CP_UTF8);
-#endif
+    // Logger::setLogLevel(Logger::LogLevel::DEBUG);
+    // Logger::error("底层中文字符测试前 +++++++++++");
 
-    std::setlocale(LC_ALL, "en_US.UTF-8");
+    // std::cout << "b cout信息：中文测试" << std::endl;
+    // std::cerr << "b cerr信息：中文测试" << std::endl;
+    // std::clog << "b clog信息：中文测试" << std::endl;
+
+    setConsoleOutputCP();
+    // #ifdef __WIN32
+    //     SetConsoleOutputCP(CP_UTF8);
+    // #endif
 
     Logger::setLogLevel(Logger::DEBUG);
+
+    std::cout << "out 信息：中文测试" << std::endl;
+    std::cerr << "err 信息：中文测试" << std::endl;
+    std::clog << "log 信息：中文测试" << std::endl;
+
+    Logger::debug("Logger debug 中文测试 -----------");
+    Logger::error("Logger error 中文测试 -----------");
+    Logger::info("Logger info 中文测试 -----------");
+    // setConsoleOutputCP();
+
 
     // 搜索舵机 ID
     //    return searchServo();
@@ -55,7 +69,7 @@ int main() {
     try {
         listPorts();
 
-#ifdef __WIN32
+#ifdef _WIN32
         std::shared_ptr<serial::Serial> serialPtr =
                 std::make_shared<serial::Serial>("COM2", 1000000, serial::Timeout::simpleTimeout(1000));
 # elif __linux__
@@ -83,8 +97,7 @@ int main() {
             return -1;
         }
 
-        sleep(1);
-
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
         // 获取版本
         // getSoftwareVersion(servo);
@@ -350,7 +363,8 @@ void getSoftwareVersion(Servo &servo) {
             servo.performSerialData(response_data);
         }
 
-        sleep(1);
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
 }
 

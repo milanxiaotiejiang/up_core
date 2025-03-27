@@ -1,3 +1,5 @@
+import sys
+
 from pybind11.setup_helpers import Pybind11Extension, build_ext
 from setuptools import setup, find_packages
 import re
@@ -26,9 +28,14 @@ def list_c_sources(directory):
     """
     sources = []
     for root, dirs, files in os.walk(directory):
+        # Windows 平台排除 unix 目录
+        if sys.platform == "win32" and "unix" in root.split(os.sep):
+            continue
+
         for file in files:
-            if file.endswith('.c') or file.endswith('.cpp') or file.endswith('.cc'):
+            if file.endswith(('.c', '.cpp', '.cc')):
                 sources.append(os.path.join(root, file))
+
     return sources
 
 
@@ -38,18 +45,39 @@ source_files = list_c_sources('src')
 # 手动添加 `bind` 目录下的 C++ 绑定文件
 source_files.append('bind/wrapper.cpp')
 
+extra_compile_args = []
+if sys.platform == "win32":
+    extra_compile_args = ["/std:c++14", "/utf-8"]
+
+extra_include_dirs = [
+    "include",
+    os.path.join("include", "serial"),
+    os.path.join("include", "serial", "impl")
+]
+
+# 如果是 Unix 系统，添加 unix 目录
+if sys.platform != "win32":
+    extra_include_dirs.append(os.path.join("include", "unix"))
+
+libraries = []
+if sys.platform == "win32":
+    libraries = ["setupapi", "advapi32"]  # Windows 平台需要链接的库
+else:
+    libraries = ["gpiod"]  # 非 Windows 平台需要 gpiod
+
+print('source_files:', source_files)
+print('extra_include_dirs:', extra_include_dirs)
+print('libraries:', libraries)
+
 # 定义 Pybind11 扩展模块
 ext_modules = [
     Pybind11Extension(
         "up_core",  # 生成的 Python 扩展模块名称
         source_files,  # 源文件列表
-        include_dirs=[
-            "include",
-            os.path.join("include", "serial"),
-            os.path.join("include", "serial", "impl")
-        ],
-        libraries=["gpiod"],
+        include_dirs=extra_include_dirs,
+        libraries=libraries,
         define_macros=[("VERSION_INFO", get_version())],  # 定义宏 VERSION_INFO
+        extra_compile_args=extra_compile_args  # 添加编译标志
     ),
 ]
 

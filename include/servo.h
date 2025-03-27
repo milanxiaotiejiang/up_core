@@ -54,16 +54,6 @@
 
 class Servo {
 public:
-    //    Servo(const gpio::GPIO &gpio, bool gpio_enabled,
-    //          const std::string &port = "",
-    //          uint32_t baudrate = 9600,
-    //          serial::Timeout timeout = serial::Timeout(),
-    //          serial::bytesize_t bytesize = serial::eightbits,
-    //          serial::parity_t parity = serial::parity_none,
-    //          serial::stopbits_t stopbits = serial::stopbits_one,
-    //          serial::flowcontrol_t flowcontrol = serial::flowcontrol_none);
-
-
 #ifdef __linux__
     explicit Servo(std::shared_ptr<serial::Serial> serial, std::shared_ptr<gpio::GPIO> gpio = nullptr)
         : serial(std::move(serial)), gpio(std::move(gpio)) {

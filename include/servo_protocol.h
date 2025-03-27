@@ -518,51 +518,19 @@ namespace servo {
     struct ServoErrorInfo {
         ServoError error;
         std::string description;
+
+        ServoErrorInfo() : error(NO_ERROR), description("No Error") {
+        } // 默认构造函数
+        ServoErrorInfo(ServoError err, const std::string &desc) : error(err), description(desc) {
+        }
     };
 
     // 将错误位映射到结构
-    static ServoErrorInfo getServoErrorInfo(uint8_t error) {
-        ServoErrorInfo errorInfo = {NO_ERROR, "无错误"};
+    ServoErrorInfo getServoErrorInfo(uint8_t error);
 
-        std::vector<ServoErrorInfo> errors = {
-            {INSTRUCTION_ERROR, "指令错误"},
-            {OVERLOAD, "过载"},
-            {CHECKSUM_ERROR, "校验和错误"},
-            {COMMAND_OUT_OF_RANGE, "指令超范围"},
-            {OVERHEAT, "过热"},
-            {OUT_OF_RANGE, "角度超范围"},
-            {OVER_VOLTAGE_UNDER_VOLTAGE, "过压/欠压"},
-        };
+    float speedRatioToRPM(float speed_ratio);
 
-        for (const auto &err: errors) {
-            if (error & static_cast<uint8_t>(err.error)) {
-                if (errorInfo.error == NO_ERROR) {
-                    // 只取第一个错误
-                    errorInfo = err;
-                } else {
-                    errorInfo.description += "，" + err.description; // 连接多个错误信息
-                }
-            }
-        }
-
-        return errorInfo;
-    }
-
-    // 从 speed_ratio 转换为 RPM
-    static float speedRatioToRPM(float speed_ratio) {
-        if (speed_ratio < -1.0f || speed_ratio > 1.0f) {
-            throw std::out_of_range("速度比例超出范围 (-1.0 - 1.0)");
-        }
-        return speed_ratio * 62.0f;
-    }
-
-    // 从 RPM 转换为 speed_ratio
-    static float rpmToSpeedRatio(float rpm) {
-        if (rpm < -62.0f || rpm > 62.0f) {
-            throw std::out_of_range("RPM 超出范围 (-62.0 - 62.0)");
-        }
-        return rpm / 62.0f;
-    }
+    float rpmToSpeedRatio(float rpm);
 } // namespace servo
 
 #endif //UP_CORE_SERVO_PROTOCOL_H

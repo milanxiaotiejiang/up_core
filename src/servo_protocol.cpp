@@ -9,9 +9,10 @@
 #include "logger.h"
 #include <cmath>
 
+#include "servo_protocol_parse.h"
+
 
 namespace servo {
-
     Base::Base(uint8_t id) {
         id_ = id;
     }
@@ -22,12 +23,12 @@ namespace servo {
 
     uint8_t baudrateToAddress4(uint32_t baud) {
         static const std::unordered_map<uint32_t, uint8_t> baudrate_map = {
-                {1000000, 0x01},
-                {500000,  0x03},
-                {250000,  0x07},
-                {115200,  0x10},  // 实际值是 117647.1
-                {57600,   0x22},  // 实际值是 57142.9
-                {19200,   0x67}   // 实际值是 19230.8
+            {1000000, 0x01},
+            {500000, 0x03},
+            {250000, 0x07},
+            {115200, 0x10}, // 实际值是 117647.1
+            {57600, 0x22}, // 实际值是 57142.9
+            {19200, 0x67} // 实际值是 19230.8
         };
 
         auto it = baudrate_map.find(baud);
@@ -35,7 +36,7 @@ namespace servo {
             return it->second;
         }
 
-        return 0x01;  // 默认恢复 1M
+        return 0x01; // 默认恢复 1M
     }
 
     // 计算校验和
@@ -44,17 +45,17 @@ namespace servo {
         return static_cast<uint8_t>(~sum);
     }
 
-//    std::vector<uint8_t> Base::buildShortPacket(uint8_t address, const std::vector<uint8_t> &data) {
-//        std::vector<uint8_t> packet;
-//
-//        packet.push_back(id_); // ID
-//        packet.push_back(address);
-//        if (!data.empty()) {
-//            packet.insert(packet.end(), data.begin(), data.end());
-//        }
-//
-//        return packet;
-//    }
+    //    std::vector<uint8_t> Base::buildShortPacket(uint8_t address, const std::vector<uint8_t> &data) {
+    //        std::vector<uint8_t> packet;
+    //
+    //        packet.push_back(id_); // ID
+    //        packet.push_back(address);
+    //        if (!data.empty()) {
+    //            packet.insert(packet.end(), data.begin(), data.end());
+    //        }
+    //
+    //        return packet;
+    //    }
 
     std::vector<uint8_t> Base::buildShortPacket(int write_length, std::vector<uint8_t> commandData) {
         std::vector<uint8_t> payload(commandData.end() - 1 - write_length, commandData.end() - 1);
@@ -62,7 +63,6 @@ namespace servo {
     }
 
     std::vector<uint8_t> Base::buildCommandPacket(ORDER command, uint8_t address, const std::vector<uint8_t> &data) {
-
         std::vector<uint8_t> packet;
         packet.push_back(0xFF); // 固定字头
         packet.push_back(0xFF);
@@ -71,7 +71,8 @@ namespace servo {
         // 数据长度 = 参数数量 + 2 + 指令(1)
         uint8_t length = static_cast<uint8_t>(data.size() + 2);
         if (!(command == ORDER::ACTION || command == ORDER::PING || command == ORDER::RESET ||
-              command == ORDER::BOOTLOADER)) {  // ACTION、PING 指令不需要地址
+              command == ORDER::BOOTLOADER)) {
+            // ACTION、PING 指令不需要地址
             length += 1;
         }
         packet.push_back(length);
@@ -92,7 +93,7 @@ namespace servo {
         // 计算校验和
         packet.push_back(calculateChecksum(packet)); // 校验和
 
-//        Logger::debug("发送指令包: " + bytesToHex(packet));
+        // Logger::debug("发送指令包: " + bytesToHex(packet));
 
         return packet;
     }
@@ -128,7 +129,6 @@ namespace servo {
     std::vector<uint8_t>
     Base::buildSyncWritePacket(uint8_t address, int write_length, std::vector<ServoProtocol> &protocols,
                                const std::function<std::vector<uint8_t>(ServoProtocol &data, int position)> &func) {
-
         std::vector<uint8_t> packet;
 
         packet.push_back(write_length);
@@ -151,7 +151,8 @@ namespace servo {
         return buildCommandPacket(ORDER::SYNC_WRITE, address, packet);
     }
 
-    ServoEEPROM::ServoEEPROM(uint8_t id) : Base(id) {}
+    ServoEEPROM::ServoEEPROM(uint8_t id) : Base(id) {
+    }
 
     // 读取软件版本
     std::vector<uint8_t> ServoEEPROM::buildGetSoftwareVersion() {
@@ -262,10 +263,9 @@ namespace servo {
         uint16_t max_reg = (max_angle * 1023) / 300;
 
         return buildCommandPacket(ORDER::WRITE_DATA, static_cast<uint8_t>(EEPROM::CCW_ANGLE_LIMIT_L), {
-                static_cast<uint8_t>(max_reg & 0xFF),  // 低 8-bit
-                static_cast<uint8_t>(max_reg >> 8)     // 高 8-bit
-        });
-
+                                      static_cast<uint8_t>(max_reg & 0xFF), // 低 8-bit
+                                      static_cast<uint8_t>(max_reg >> 8) // 高 8-bit
+                                  });
     }
 
     // 设定最大温度
@@ -274,7 +274,7 @@ namespace servo {
             throw std::out_of_range("Temperature out of range (0 - 80°C)");
         }
 
-        uint8_t register_value = static_cast<uint8_t>(temperature);  // 直接存储温度数值
+        uint8_t register_value = static_cast<uint8_t>(temperature); // 直接存储温度数值
 
         return buildCommandPacket(ORDER::WRITE_DATA, static_cast<uint8_t>(EEPROM::MAX_TEMPERATURE), {register_value});
     }
@@ -291,9 +291,9 @@ namespace servo {
         }
 
         return buildCommandPacket(ORDER::WRITE_DATA, static_cast<uint8_t>(EEPROM::MIN_VOLTAGE), {
-                min_value,  // 最低电压
-                max_value   // 最高电压
-        });
+                                      min_value, // 最低电压
+                                      max_value // 最高电压
+                                  });
     }
 
     // 设定最大扭矩
@@ -303,30 +303,30 @@ namespace servo {
         }
 
         return buildCommandPacket(ORDER::WRITE_DATA, static_cast<uint8_t>(EEPROM::MAX_TORQUE_L), {
-                static_cast<uint8_t>(torque & 0xFF),  // 低字节 (L)
-                static_cast<uint8_t>((torque >> 8) & 0xFF) // 高字节 (H)
-        });
+                                      static_cast<uint8_t>(torque & 0xFF), // 低字节 (L)
+                                      static_cast<uint8_t>((torque >> 8) & 0xFF) // 高字节 (H)
+                                  });
     }
 
     // 设定应答返回级别
     std::vector<uint8_t> ServoEEPROM::buildSetStatusReturnLevel(StatusReturnLevel level) {
         return buildCommandPacket(ORDER::WRITE_DATA, static_cast<uint8_t>(EEPROM::STATUS_RETURN_LEVEL), {
-                static_cast<uint8_t>(level)
-        });
+                                      static_cast<uint8_t>(level)
+                                  });
     }
 
     // 设定 LED 报警
     std::vector<uint8_t> ServoEEPROM::buildSetAlarmLED(AlarmLEDConfig config) {
         return buildCommandPacket(ORDER::WRITE_DATA, static_cast<uint8_t>(EEPROM::ALARM_LED), {
-                static_cast<uint8_t>(config)
-        });
+                                      static_cast<uint8_t>(config)
+                                  });
     }
 
     // 设定报警卸载条件
     std::vector<uint8_t> ServoEEPROM::buildSetAlarmShutdown(AlarmShutdownConfig config) {
         return buildCommandPacket(ORDER::WRITE_DATA, static_cast<uint8_t>(EEPROM::ALARM_SHUTDOWN), {
-                static_cast<uint8_t>(config)
-        });
+                                      static_cast<uint8_t>(config)
+                                  });
     }
 
     // 读取指定长度的 Eeprom 数据
@@ -335,7 +335,8 @@ namespace servo {
     }
 
 
-    ServoRAM::ServoRAM(uint8_t id) : Base(id) {}
+    ServoRAM::ServoRAM(uint8_t id) : Base(id) {
+    }
 
     // 读取扭矩开关状态
     std::vector<uint8_t> ServoRAM::buildGetTorqueEnabled() {
@@ -387,9 +388,9 @@ namespace servo {
         uint16_t position = static_cast<uint16_t>((angle / 300.0f) * 1023);
 
         return buildCommandPacket(ORDER::WRITE_DATA, static_cast<uint8_t>(RAM::GOAL_POSITION_L), {
-                static_cast<uint8_t>(position & 0xFF),  // 低字节
-                static_cast<uint8_t>((position >> 8) & 0xFF)  // 高字节
-        });
+                                      static_cast<uint8_t>(position & 0xFF), // 低字节
+                                      static_cast<uint8_t>((position >> 8) & 0xFF) // 高字节
+                                  });
     }
 
     // 目标角度和速度
@@ -408,12 +409,11 @@ namespace servo {
         uint16_t speed = static_cast<uint16_t>(rpm * 1023.0f / 62.0f); // 0x0000 - 0x03FF
 
         return buildCommandPacket(ORDER::WRITE_DATA, static_cast<uint8_t>(RAM::GOAL_POSITION_L), {
-                static_cast<uint8_t>(position & 0xFF),  // 位置低字节
-                static_cast<uint8_t>((position >> 8) & 0xFF),  // 位置高字节
-                static_cast<uint8_t>(speed & 0xFF),  // 速度低字节
-                static_cast<uint8_t>((speed >> 8) & 0xFF)  // 速度高字节
-        });
-
+                                      static_cast<uint8_t>(position & 0xFF), // 位置低字节
+                                      static_cast<uint8_t>((position >> 8) & 0xFF), // 位置高字节
+                                      static_cast<uint8_t>(speed & 0xFF), // 速度低字节
+                                      static_cast<uint8_t>((speed >> 8) & 0xFF) // 速度高字节
+                                  });
     }
 
 
@@ -427,9 +427,9 @@ namespace servo {
         uint16_t position = static_cast<uint16_t>((angle / 300.0f) * 1023);
 
         return buildCommandPacket(ORDER::REG_WRITE, static_cast<uint8_t>(RAM::GOAL_POSITION_L), {
-                static_cast<uint8_t>(position & 0xFF),  // 低字节
-                static_cast<uint8_t>((position >> 8) & 0xFF)  // 高字节
-        });
+                                      static_cast<uint8_t>(position & 0xFF), // 低字节
+                                      static_cast<uint8_t>((position >> 8) & 0xFF) // 高字节
+                                  });
     }
 
     // REG_WRITE + ACTION
@@ -444,9 +444,9 @@ namespace servo {
         }
 
         return buildCommandPacket(ORDER::WRITE_DATA, static_cast<uint8_t>(RAM::ACCELERATION), {
-                acceleration,  // 加速度
-                deceleration   // 减速度
-        });
+                                      acceleration, // 加速度
+                                      deceleration // 减速度
+                                  });
     }
 
     std::vector<uint8_t> ServoRAM::buildGetGoalPosition() {
@@ -514,9 +514,9 @@ namespace servo {
         }
 
         return buildCommandPacket(ORDER::WRITE_DATA, static_cast<uint8_t>(RAM::MIN_PWM_L), {
-                static_cast<uint8_t>(pwm & 0xFF),  // 低字节
-                static_cast<uint8_t>((pwm >> 8) & 0xFF) // 高字节
-        });
+                                      static_cast<uint8_t>(pwm & 0xFF), // 低字节
+                                      static_cast<uint8_t>((pwm >> 8) & 0xFF) // 高字节
+                                  });
     }
 
     // 读取最小PWM
@@ -530,7 +530,8 @@ namespace servo {
     }
 
 
-    Motor::Motor(uint8_t id) : Base(id) {}
+    Motor::Motor(uint8_t id) : Base(id) {
+    }
 
     // 设置舵机进入电机调速模式
     std::vector<uint8_t> Motor::buildMotorMode() {
@@ -554,26 +555,66 @@ namespace servo {
 
         // **设置方向位 BIT10**
         if (rpm >= 0) {
-            speed |= 0x0400;  // 顺时针 (BIT10 = 1)
+            speed |= 0x0400; // 顺时针 (BIT10 = 1)
         } else {
-            speed &= 0x03FF;  // 逆时针 (BIT10 = 0)
+            speed &= 0x03FF; // 逆时针 (BIT10 = 0)
         }
 
         // **调用 `buildCommandPacket` 生成命令**
         return buildCommandPacket(ORDER::WRITE_DATA, static_cast<uint8_t>(RAM::MOVING_SPEED_L), {
-                static_cast<uint8_t>(speed & 0xFF),         // 速度低字节
-                static_cast<uint8_t>((speed >> 8) & 0xFF)   // 速度高字节 (包含方向位)
-        });
+                                      static_cast<uint8_t>(speed & 0xFF), // 速度低字节
+                                      static_cast<uint8_t>((speed >> 8) & 0xFF) // 速度高字节 (包含方向位)
+                                  });
     }
 
     std::vector<uint8_t> Motor::buildRestoreAngleLimits() {
         return buildCommandPacket(ORDER::WRITE_DATA, static_cast<uint8_t>(EEPROM::CW_ANGLE_LIMIT_L), {
-                0x00, 0x00,   // CW 角度限制 = 0x0000
-                0xFF, 0x03    // CCW 角度限制 = 0x03FF
-        });
+                                      0x00, 0x00, // CW 角度限制 = 0x0000
+                                      0xFF, 0x03 // CCW 角度限制 = 0x03FF
+                                  });
     }
 
+    // 将错误位映射到结构
+    ServoErrorInfo getServoErrorInfo(uint8_t error) {
+        ServoErrorInfo errorInfo = {NO_ERROR, "无错误"};
 
+        std::vector<ServoErrorInfo> errors = {
+            {INSTRUCTION_ERROR, "指令错误"},
+            {OVERLOAD, "过载"},
+            {CHECKSUM_ERROR, "校验和错误"},
+            {COMMAND_OUT_OF_RANGE, "指令超范围"},
+            {OVERHEAT, "过热"},
+            {OUT_OF_RANGE, "角度超范围"},
+            {OVER_VOLTAGE_UNDER_VOLTAGE, "过压/欠压"},
+        };
+
+        for (const auto &err: errors) {
+            if (error & static_cast<uint8_t>(err.error)) {
+                if (errorInfo.error == NO_ERROR) {
+                    // 只取第一个错误
+                    errorInfo = err;
+                } else {
+                    errorInfo.description += "，" + std::string(err.description); // 连接多个错误信息
+                }
+            }
+        }
+
+        return errorInfo;
+    }
+
+    // 从 speed_ratio 转换为 RPM
+    float speedRatioToRPM(float speed_ratio) {
+        if (speed_ratio < -1.0f || speed_ratio > 1.0f) {
+            throw std::out_of_range("速度比例超出范围 (-1.0 - 1.0)");
+        }
+        return speed_ratio * 62.0f;
+    }
+
+    // 从 RPM 转换为 speed_ratio
+    float rpmToSpeedRatio(float rpm) {
+        if (rpm < -62.0f || rpm > 62.0f) {
+            throw std::out_of_range("RPM 超出范围 (-62.0 - 62.0)");
+        }
+        return rpm / 62.0f;
+    }
 } // namespace servo
-
-

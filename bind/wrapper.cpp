@@ -19,6 +19,8 @@
 #include <pybind11/stl.h>
 #include <pybind11/functional.h>
 
+#include "system_up.h"
+
 extern "C" {
 #include "add.h"
 }
@@ -26,18 +28,17 @@ extern "C" {
 namespace py = pybind11;
 
 PYBIND11_MODULE(up_core, m) {
-
     m.doc() = "up_core module for python";
 
     // Add
     m.def("add", &add, "计算两个整数的和。"
-                       "参数："
-                       "a 第一个加数。"
-                       "b 第二个加数。"
-                       "返回值：两个整数的和。");
+          "参数："
+          "a 第一个加数。"
+          "b 第二个加数。"
+          "返回值：两个整数的和。");
     m.def("system", &system, "A function that prints the system architecture");
 
-    // Logger
+    // Logger enum
     py::enum_<Logger::LogLevel>(m, "LogLevel")
             .value("DEBUG", Logger::DEBUG)
             .value("INFO", Logger::INFO)
@@ -59,41 +60,41 @@ PYBIND11_MODULE(up_core, m) {
 
 #ifdef __linux__
 
-    // GPIO
-    py::class_<gpio::GPIO, std::shared_ptr<gpio::GPIO>>(m, "GPIO")
-            .def(py::init<int, int>(), py::arg("chip_id"), py::arg("line_id"), "构造 GPIO 对象")
-            .def("init", &gpio::GPIO::init, "初始化 GPIO")
-            .def("setValue", &gpio::GPIO::setValue, py::arg("value"), "设置 GPIO 的电平")
-            .def("release", &gpio::GPIO::release, "释放 GPIO 资源");
+        // GPIO
+        py::class_<gpio::GPIO, std::shared_ptr<gpio::GPIO>>(m, "GPIO")
+                .def(py::init<int, int>(), py::arg("chip_id"), py::arg("line_id"), "构造 GPIO 对象")
+                .def("init", &gpio::GPIO::init, "初始化 GPIO")
+                .def("setValue", &gpio::GPIO::setValue, py::arg("value"), "设置 GPIO 的电平")
+                .def("release", &gpio::GPIO::release, "释放 GPIO 资源");
 
-    py::class_<gpio::GPIOException>(m, "GPIOException")
-            .def(py::init<const char *>())
-            .def("what", &gpio::GPIOException::what);
+        py::class_<gpio::GPIOException>(m, "GPIOException")
+                .def(py::init<const char *>())
+                .def("what", &gpio::GPIOException::what);
 
-    // ADC
-    py::class_<adc::ADC, std::shared_ptr<adc::ADC>>(m, "ADC")
-            .def(py::init<spi::SPI &, uint8_t>(), py::arg("spi"), py::arg("channel_count"), "构造 ADC 对象")
-            .def("init", &adc::ADC::init, "初始化 ADC")
-            .def("read_channel", &adc::ADC::readChannel, py::arg("channel"), "读取单个 ADC 通道")
-            .def("read_all", &adc::ADC::readAll, "读取所有 ADC 通道");
+        // ADC
+        py::class_<adc::ADC, std::shared_ptr<adc::ADC>>(m, "ADC")
+                .def(py::init<spi::SPI &, uint8_t>(), py::arg("spi"), py::arg("channel_count"), "构造 ADC 对象")
+                .def("init", &adc::ADC::init, "初始化 ADC")
+                .def("read_channel", &adc::ADC::readChannel, py::arg("channel"), "读取单个 ADC 通道")
+                .def("read_all", &adc::ADC::readAll, "读取所有 ADC 通道");
 
-    py::class_<adc::ADCException>(m, "ADCException")
-            .def(py::init<const char *>())
-            .def("what", &adc::ADCException::what);
+        py::class_<adc::ADCException>(m, "ADCException")
+                .def(py::init<const char *>())
+                .def("what", &adc::ADCException::what);
 
-    // SPI
-    py::class_<spi::SPI, std::shared_ptr<spi::SPI>>(m, "SPI")
-            .def(py::init<const std::string &, uint32_t, uint8_t, uint8_t>(),
-                 py::arg("device"), py::arg("speed"), py::arg("mode"), py::arg("bits_per_word"),
-                 "构造 SPI 对象")
-            .def("init", &spi::SPI::init, "初始化 SPI 设备")
-            .def("transfer", &spi::SPI::transfer, py::arg("tx"), py::arg("rx"), py::arg("length"),
-                 "SPI 传输数据")
-            .def("close", &spi::SPI::close, "关闭 SPI 设备");
+        // SPI
+        py::class_<spi::SPI, std::shared_ptr<spi::SPI>>(m, "SPI")
+                .def(py::init<const std::string &, uint32_t, uint8_t, uint8_t>(),
+                     py::arg("device"), py::arg("speed"), py::arg("mode"), py::arg("bits_per_word"),
+                     "构造 SPI 对象")
+                .def("init", &spi::SPI::init, "初始化 SPI 设备")
+                .def("transfer", &spi::SPI::transfer, py::arg("tx"), py::arg("rx"), py::arg("length"),
+                     "SPI 传输数据")
+                .def("close", &spi::SPI::close, "关闭 SPI 设备");
 
-    py::class_<spi::SPIException>(m, "SPIException")
-            .def(py::init<const char *>())
-            .def("what", &spi::SPIException::what);
+        py::class_<spi::SPIException>(m, "SPIException")
+                .def(py::init<const char *>())
+                .def("what", &spi::SPIException::what);
 
 #endif
 
@@ -205,7 +206,8 @@ PYBIND11_MODULE(up_core, m) {
 
     // 绑定 ServoErrorInfo 结构体
     py::class_<servo::ServoErrorInfo>(m, "ServoErrorInfo")
-            .def(py::init<>())  // 默认构造函数
+            .def(py::init<>()) // 默认构造函数
+            .def(py::init<servo::ServoError, const std::string &>()) // 指定参数类型
             .def_readwrite("error", &servo::ServoErrorInfo::error)
             .def_readwrite("description", &servo::ServoErrorInfo::description);
 
@@ -319,9 +321,9 @@ PYBIND11_MODULE(up_core, m) {
 
     py::class_<servo::ServoProtocol>(m, "ServoProtocol")
             .def(py::init<uint8_t>(), py::arg("id"), "构造 ServoProtocol 对象")
-            .def_readwrite("eeprom", &servo::ServoProtocol::eeprom)   // 暴露 eeprom
-            .def_readwrite("ram", &servo::ServoProtocol::ram)        // 暴露 ram
-            .def_readwrite("motor", &servo::ServoProtocol::motor);   // 暴露 motor
+            .def_readwrite("eeprom", &servo::ServoProtocol::eeprom) // 暴露 eeprom
+            .def_readwrite("ram", &servo::ServoProtocol::ram) // 暴露 ram
+            .def_readwrite("motor", &servo::ServoProtocol::motor); // 暴露 motor
 
     // Bind the bytesize_t enum
     py::enum_<serial::bytesize_t>(m, "bytesize_t")
@@ -371,8 +373,9 @@ PYBIND11_MODULE(up_core, m) {
             .def_readwrite("write_timeout_multiplier", &serial::Timeout::write_timeout_multiplier);
 
     // Bind the Serial class
-    py::class_<serial::Serial, std::shared_ptr<serial::Serial>>(m, "Serial")
-            .def(py::init<const std::string &, uint32_t, serial::Timeout, serial::bytesize_t, serial::parity_t, serial::stopbits_t, serial::flowcontrol_t>(),
+    py::class_<serial::Serial, std::shared_ptr<serial::Serial> >(m, "Serial")
+            .def(py::init<const std::string &, uint32_t, serial::Timeout, serial::bytesize_t, serial::parity_t,
+                     serial::stopbits_t, serial::flowcontrol_t>(),
                  py::arg("port") = "",
                  py::arg("baudrate") = 9600,
                  py::arg("timeout") = serial::Timeout(),
@@ -387,7 +390,7 @@ PYBIND11_MODULE(up_core, m) {
             .def("waitReadable", &serial::Serial::waitReadable)
             .def("waitByteTimes", &serial::Serial::waitByteTimes)
 
-                    // 绑定第一个 read 函数：接收 uint8_t* 缓冲区和大小
+            // 绑定第一个 read 函数：接收 uint8_t* 缓冲区和大小
             .def("read_bytes", [](serial::Serial &self, py::buffer &buffer, size_t size) {
                 // 获取 Python 缓冲区的信息
                 py::buffer_info buf_info = buffer.request();
@@ -403,7 +406,7 @@ PYBIND11_MODULE(up_core, m) {
                 return bytes_read;
             })
 
-                    // 绑定第二个 read 函数：接收 std::vector<uint8_t>
+            // 绑定第二个 read 函数：接收 std::vector<uint8_t>
             .def("read", [](serial::Serial &self, size_t size) {
                 std::vector<uint8_t> buffer;
                 // 调用 C++ 的 std::vector 版本的 read 函数
@@ -412,7 +415,7 @@ PYBIND11_MODULE(up_core, m) {
                 return py::make_tuple(buffer, bytes_read);
             })
 
-                    // 绑定第一个 read 函数：接收 std::string 引用
+            // 绑定第一个 read 函数：接收 std::string 引用
             .def("read_string", [](serial::Serial &self, size_t size) {
                 std::string buffer;
                 // 调用 C++ 的 std::string 版本的 read 函数
@@ -421,7 +424,7 @@ PYBIND11_MODULE(up_core, m) {
                 return py::make_tuple(buffer, bytes_read);
             })
 
-                    // 绑定第二个 read 函数：返回 std::string
+            // 绑定第二个 read 函数：返回 std::string
             .def("read_str", [](serial::Serial &self, size_t size) {
                 // 直接调用 C++ 中返回 std::string 的 read 函数
                 std::string result = self.read(size);
@@ -429,7 +432,7 @@ PYBIND11_MODULE(up_core, m) {
                 return result;
             })
 
-                    // 绑定第一个 readline 函数：接收 string 引用
+            // 绑定第一个 readline 函数：接收 string 引用
             .def("readline_buffer", [](serial::Serial &self, size_t size, const std::string &eol) {
                 std::string buffer;
                 // 调用 C++ 的 readline 函数
@@ -438,7 +441,7 @@ PYBIND11_MODULE(up_core, m) {
                 return py::make_tuple(buffer, bytes_read);
             })
 
-                    // 绑定第二个 readline 函数：返回 string
+            // 绑定第二个 readline 函数：返回 string
             .def("readline", [](serial::Serial &self, size_t size, const std::string &eol) {
                 // 直接调用 C++ 中返回 std::string 的 readline 函数
                 std::string result = self.readline(size, eol);
@@ -446,7 +449,7 @@ PYBIND11_MODULE(up_core, m) {
                 return result;
             })
 
-                    // 绑定 readlines 函数：返回 vector<string>
+            // 绑定 readlines 函数：返回 vector<string>
             .def("readlines", [](serial::Serial &self, size_t size, const std::string &eol) {
                 // 调用 C++ 中的 readlines 函数
                 std::vector<std::string> lines = self.readlines(size, eol);
@@ -514,18 +517,13 @@ PYBIND11_MODULE(up_core, m) {
 
     // Servo
     py::class_<Servo>(m, "Servo")
-//            .def(py::init<const gpio::GPIO &, bool, const std::string &, uint32_t, serial::Timeout, serial::bytesize_t, serial::parity_t, serial::stopbits_t, serial::flowcontrol_t>(),
-//                 py::arg("gpio"),
-//                 py::arg("gpio_enabled"),
-//                 py::arg("port") = "",
-//                 py::arg("baudrate") = 9600,
-//                 py::arg("timeout") = serial::Timeout(),
-//                 py::arg("bytesize") = serial::eightbits,
-//                 py::arg("parity") = serial::parity_none,
-//                 py::arg("stopbits") = serial::stopbits_one,
-//                 py::arg("flowcontrol") = serial::flowcontrol_none)
-            .def(py::init<std::shared_ptr<serial::Serial>, std::shared_ptr<gpio::GPIO>>(),
-                 py::arg("serial"), py::arg("gpio") = nullptr, "构造 Servo 对象")
+#ifdef __linux__
+        .def(py::init<std::shared_ptr<serial::Serial>, std::shared_ptr<gpio::GPIO>>(),
+             py::arg("serial"), py::arg("gpio") = nullptr, "构造 Servo 对象")
+#elif _WIN32
+            .def(py::init<std::shared_ptr<serial::Serial> >(),
+                 py::arg("serial"), "构造 Servo 对象")
+#endif
             .def("init", &Servo::init, "Initialize the servo")
             .def("close", &Servo::close, "Close the servo connection")
             .def("send_command", &Servo::sendCommand, py::arg("frame"), "Send command to the servo")
@@ -564,9 +562,12 @@ PYBIND11_MODULE(up_core, m) {
     m.def("parseRAMData", &servo::parseRAMData, "Parse RAM data", py::arg("data"),
           py::arg("start") = servo::RAM::TORQUE_ENABLE);
 
+
+    m.def("setConsoleOutputCP", &setConsoleOutputCP, "");
+
     py::class_<FirmwareUpdate>(m, "FirmwareUpdate")
-            .def(py::init<>())  // 绑定构造函数
-                    // 绑定 upgrade 方法，并支持默认参数
+            .def(py::init<>()) // 绑定构造函数
+            // 绑定 upgrade 方法，并支持默认参数
             .def("upgrade_path", &FirmwareUpdate::upgrade_path,
                  py::arg("port_input"),
                  py::arg("baud_rate"),
