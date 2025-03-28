@@ -317,8 +317,12 @@ Serial::SerialImpl::available ()
 bool
 Serial::SerialImpl::waitReadable (uint32_t /*timeout*/)
 {
+#ifdef _WIN32
+  return true;
+#else
   THROW (IOException, "waitReadable is not implemented on Windows.");
   return false;
+#endif
 }
 
 void

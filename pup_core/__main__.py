@@ -25,7 +25,8 @@ def cli(host, port, reload, log_level):
     """启动 pup_core 服务器，支持多个参数"""
 
     # 配置日志系统
-    logging.basicConfig(level=logging.DEBUG,  # 日志级别：DEBUG、INFO、WARNING、ERROR、CRITICAL
+    logging.basicConfig(filename='server.log',
+                        level=logging.DEBUG,  # 日志级别：DEBUG、INFO、WARNING、ERROR、CRITICAL
                         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')  # 日志格式
 
     # 将 click 的 log-level 转换为 up_core 中的 LogLevel
