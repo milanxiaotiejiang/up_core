@@ -6,4 +6,6 @@
 - [up](doc/up.md)
 - [uio](doc/uio.md)
 - [uio_s](doc/uio_s.md)
+- [uio_u](doc/uio_u.md)
 - [pup_core](doc/pup_core.md)
+

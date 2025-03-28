@@ -7,9 +7,9 @@
 
 #ifdef __linux__
 
-#include "adc.h"
-#include "gpio.h"
-#include "spi.h"
+#include "unix/adc.h"
+#include "unix/gpio.h"
+#include "unix/spi.h"
 
 #endif
 
